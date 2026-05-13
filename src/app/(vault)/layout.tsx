@@ -10,6 +10,11 @@ import { ItemDetail } from "@/components/vault/ItemDetail";
 import { ItemEditor } from "@/components/vault/ItemEditor";
 import { ToastContainer } from "@/components/ui/Toast";
 import { ImportPage } from "@/components/vault/ImportPage";
+import SettingsPage from "./settings/page";
+import EmergencyPage from "./emergency/page";
+import GeneratorPage from "./generator/page";
+import BreachPage from "./breach/page";
+import TOTPPage from "./totp/page";
 import type { VaultItem, ItemType, ViewRoute } from "@/types";
 
 function VaultShell() {
@@ -175,6 +180,35 @@ function VaultShell() {
         );
       case "import":
         return <ImportPage />;
+      case "settings":
+        return <SettingsPage />;
+      case "emergency":
+        return <EmergencyPage />;
+      case "generator":
+        return <GeneratorPage />;
+      case "breach":
+        return <BreachPage />;
+      case "totp":
+        return <TOTPPage />;
+      case "wallet":
+        return (
+          <div className="p-6">
+            <div className="max-w-2xl mx-auto">
+              <h1 className="text-2xl font-bold text-text-primary">Crypto Wallets</h1>
+              <p className="text-sm text-text-muted mt-1">
+                Manage your cryptocurrency wallet entries.
+              </p>
+              <div className="mt-8">
+                <button
+                  onClick={handleCreateItem("cryptocurrency")}
+                  className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/80 transition-colors"
+                >
+                  Add Wallet Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="p-6">
