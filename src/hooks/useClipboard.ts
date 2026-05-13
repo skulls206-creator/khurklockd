@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export interface UseClipboardOptions {
   /** Delay in ms before clearing clipboard and internal state. Default 30000 (30s). */
@@ -24,7 +24,7 @@ export function useClipboard(
   options: UseClipboardOptions = {},
 ): UseClipboardReturn {
   const { clearAfterMs = 30_000 } = options;
-  const copiedRef = useRef(false);
+  const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const copy = useCallback(
@@ -49,25 +49,25 @@ export function useClipboard(
           }
         }
 
-        copiedRef.current = true;
+        setCopied(true);
 
         if (timeoutRef.current !== null) {
           clearTimeout(timeoutRef.current);
         }
 
         timeoutRef.current = setTimeout(() => {
-          copiedRef.current = false;
+          setCopied(false);
           timeoutRef.current = null;
         }, clearAfterMs);
 
         return true;
       } catch {
-        copiedRef.current = false;
+        setCopied(false);
         return false;
       }
     },
     [clearAfterMs],
   );
 
-  return { copy, copied: copiedRef.current };
+  return { copy, copied };
 }
