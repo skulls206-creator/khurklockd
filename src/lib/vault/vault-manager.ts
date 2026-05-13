@@ -375,14 +375,58 @@ function ensureUnlocked(): VaultPayload {
 }
 
 /**
+ * Generate a deterministic "duplicate key" from a VaultItem.
+ * Two items are considered duplicates if they share the same key:
+ * - Login items: uri + '|' + username (if both present), or exact name+url match
+ * - Other items (note, card, identity): exact name + type match
+ *
+ * Returns null if the item doesn't produce a meaningful key.
+ */
+function duplicateKey(item: VaultItem): string | null {
+  if (item.type === "login") {
+    if (item.uri && item.username) {
+      return `login|${item.uri.toLowerCase()}|${item.username.toLowerCase()}`;
+    }
+    if (item.uri && item.name) {
+      return `login|${item.uri.toLowerCase()}|${item.name.toLowerCase()}`;
+    }
+  }
+  if (item.name) {
+    return `${item.type}|${item.name.toLowerCase()}`;
+  }
+  // Item with no name — can't reliably dedup
+  return null;
+}
+
+/**
+ * Check whether an item that would be a duplicate already exists.
+ */
+function findDuplicate(vault: VaultPayload, item: VaultItem): VaultItem | null {
+  const key = duplicateKey(item);
+  if (!key) return null;
+  return vault.items.find((existing) => duplicateKey(existing) === key) ?? null;
+}
+
+/**
  * Add a new item to the vault.
  * The caller is responsible for calling `saveVault()` to persist.
  *
  * @param item - The item to add (id, createdAt, updatedAt will be auto-generated)
- * @returns The fully-populated item with generated id and timestamps
+ * @param options - Optional { skipDuplicateCheck } to bypass dedup
+ * @returns { result: 'added' | 'duplicate', item } — duplicate returns the existing item
  */
-export function addItem(item: VaultItem): VaultItem {
+export function addItem(
+  item: VaultItem,
+  options?: { skipDuplicateCheck?: boolean },
+): { result: "added" | "duplicate"; item: VaultItem } {
   const vault = ensureUnlocked();
+
+  if (!options?.skipDuplicateCheck) {
+    const dup = findDuplicate(vault, item);
+    if (dup) {
+      return { result: "duplicate", item: dup };
+    }
+  }
 
   const now = nowISO();
   const populated = {
@@ -395,7 +439,7 @@ export function addItem(item: VaultItem): VaultItem {
   } as VaultItem;
 
   vault.items.push(populated);
-  return populated;
+  return { result: "added", item: populated };
 }
 
 /**
@@ -566,6 +610,19 @@ export function getFavorites(): VaultItem[] {
 export function getItemCount(): number {
   const vault = ensureUnlocked();
   return vault.items.length;
+}
+
+/**
+ * Delete all items from the vault.
+ * The caller is responsible for calling `saveVault()` to persist.
+ *
+ * @returns Number of items deleted
+ */
+export function deleteAllItems(): number {
+  const vault = ensureUnlocked();
+  const count = vault.items.length;
+  vault.items = [];
+  return count;
 }
 
 /**

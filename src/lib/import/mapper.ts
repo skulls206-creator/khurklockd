@@ -128,17 +128,22 @@ function normalizeTag(tag: string): string {
 /** Bulk map entries and add them to the vault via VaultManager. */
 export async function importEntries(
   entries: ParsedEntry[],
-): Promise<{ added: number; skipped: number; errors: string[] }> {
+): Promise<{ added: number; skipped: number; duplicates: number; errors: string[] }> {
   const { addItem } = await import("@/lib/vault/vault-manager");
   let added = 0;
   let skipped = 0;
+  let duplicates = 0;
   const errors: string[] = [];
 
   for (const entry of entries) {
     try {
       const item = mapToVaultItem(entry);
-      addItem(item);
-      added++;
+      const result = addItem(item);
+      if (result.result === "duplicate") {
+        duplicates++;
+      } else {
+        added++;
+      }
     } catch (err) {
       skipped++;
       errors.push(
@@ -147,5 +152,5 @@ export async function importEntries(
     }
   }
 
-  return { added, skipped, errors };
+  return { added, skipped, duplicates, errors };
 }

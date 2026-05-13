@@ -212,8 +212,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     (item: VaultItem): VaultItem => {
       try {
         const result = vmAddItem(item);
-        setItems((prev) => [...prev, result]);
-        return result;
+        setItems((prev) => [...prev, result.item]);
+        return result.item;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to add item");
         throw err;
