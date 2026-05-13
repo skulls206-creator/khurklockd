@@ -55,6 +55,7 @@ export function ItemCard({ item, onClick, onToggleFavorite }: ItemCardProps) {
 
   return (
     <div
+      data-item-id={item.id}
       onClick={() => onClick(item.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

@@ -59,7 +59,7 @@ export default function SettingsPage() {
       </div>
 
       {savedMessage && (
-        <div className="p-3 rounded-lg bg-success-muted border border-success/20 text-sm text-success">
+        <div role="status" aria-live="polite" className="p-3 rounded-lg bg-success-muted border border-success/20 text-sm text-success">
           {savedMessage}
         </div>
       )}

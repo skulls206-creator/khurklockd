@@ -325,6 +325,8 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
     note: "Note",
     card: "Card",
     identity: "Identity",
+    "secure-note": "Secure Note",
+    cryptocurrency: "Wallet",
   }[item.type];
 
   return (

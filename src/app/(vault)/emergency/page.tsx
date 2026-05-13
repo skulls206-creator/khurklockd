@@ -197,10 +197,11 @@ export default function EmergencyPage() {
           ) : (
             <>
               <div className="space-y-1">
-                <label className="text-sm text-text-secondary">
+                <label htmlFor="dms-inactivity-days" className="text-sm text-text-secondary">
                   Days of Inactivity Before Trigger
                 </label>
                 <input
+                  id="dms-inactivity-days"
                   type="number"
                   min={1}
                   max={365}

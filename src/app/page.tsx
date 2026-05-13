@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg-primary text-text-primary">
-      <p className="text-text-muted">Redirecting...</p>
+      <p className="text-text-muted" role="status">Redirecting...</p>
     </main>
   );
 }

@@ -523,27 +523,44 @@ export function getItem(id: string): VaultItem | undefined {
 }
 
 /**
- * Search items by name, username, URI, or notes.
+ * Search items by name, username, URI, notes, or tags.
  * Case-insensitive, matches substrings.
  *
  * @param query - The search string
  * @param type - Optional item type filter
+ * @param tag - Optional tag filter (exact match)
+ * @param favoritesOnly - Only return favorited items
  * @returns Matching items, ordered by relevance (exact name match first)
  */
 export function searchItems(
   query: string,
   type?: ItemType,
+  tag?: string,
+  favoritesOnly?: boolean,
 ): VaultItem[] {
   const vault = ensureUnlocked();
   const lower = query.toLowerCase().trim();
 
-  if (!lower) {
-    return type ? getItemsByType(type) : [...vault.items];
+  // Apply pre-filters
+  let candidates = vault.items;
+
+  if (type) {
+    candidates = candidates.filter((item) => item.type === type);
   }
 
-  const candidates = type
-    ? vault.items.filter((item) => item.type === type)
-    : vault.items;
+  if (tag) {
+    candidates = candidates.filter(
+      (item) => item.tags && item.tags.includes(tag),
+    );
+  }
+
+  if (favoritesOnly) {
+    candidates = candidates.filter((item) => item.favorite);
+  }
+
+  if (!lower) {
+    return [...candidates];
+  }
 
   // Score each item: exact name match = 2, substring match = 1
   const scored = candidates.map((item) => {
@@ -554,6 +571,17 @@ export function searchItems(
       score = 2;
     } else if (name.includes(lower)) {
       score = 1;
+    }
+
+    // Search in tags
+    if (item.tags && item.tags.length > 0) {
+      for (const t of item.tags) {
+        if (t.toLowerCase() === lower) {
+          score = Math.max(score, 2);
+        } else if (t.toLowerCase().includes(lower)) {
+          score = Math.max(score, 1);
+        }
+      }
     }
 
     // Also search in type-specific fields
@@ -592,6 +620,49 @@ export function searchItems(
 export function getItemsByType(type: ItemType): VaultItem[] {
   const vault = ensureUnlocked();
   return vault.items.filter((item) => item.type === type);
+}
+
+/**
+ * Get all unique tags from all vault items, sorted alphabetically.
+ * Each tag is returned with a count of how many items use it.
+ */
+export function getAllTags(): Array<{ tag: string; count: number }> {
+  const vault = ensureUnlocked();
+  const tagMap = new Map<string, number>();
+
+  for (const item of vault.items) {
+    for (const tag of item.tags ?? []) {
+      const normalized = tag.toLowerCase();
+      tagMap.set(normalized, (tagMap.get(normalized) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(tagMap.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
+}
+
+/**
+ * Get all items that have a specific tag (case-insensitive exact match).
+ *
+ * @param tag - The tag to filter by
+ */
+export function getItemsByTag(tag: string): VaultItem[] {
+  const vault = ensureUnlocked();
+  const lower = tag.toLowerCase();
+  return vault.items.filter(
+    (item) => item.tags?.some((t) => t.toLowerCase() === lower),
+  );
+}
+
+/**
+ * Get the count of items for a specific type.
+ *
+ * @param type - The item type to count
+ */
+export function getCountByType(type: ItemType): number {
+  const vault = ensureUnlocked();
+  return vault.items.filter((item) => item.type === type).length;
 }
 
 /**

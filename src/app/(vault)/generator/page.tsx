@@ -128,7 +128,7 @@ export default function GeneratorPage() {
               {/* Length slider */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <label className="text-sm text-text-secondary">
+                  <label htmlFor="gen-password-length" className="text-sm text-text-secondary">
                     Length
                   </label>
                   <span className="text-sm font-mono text-text-primary">
@@ -136,6 +136,7 @@ export default function GeneratorPage() {
                   </span>
                 </div>
                 <input
+                  id="gen-password-length"
                   type="range"
                   min={4}
                   max={128}
@@ -206,7 +207,7 @@ export default function GeneratorPage() {
               {/* Word count */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <label className="text-sm text-text-secondary">
+                  <label htmlFor="gen-word-count" className="text-sm text-text-secondary">
                     Word Count
                   </label>
                   <span className="text-sm font-mono text-text-primary">
@@ -214,6 +215,7 @@ export default function GeneratorPage() {
                   </span>
                 </div>
                 <input
+                  id="gen-word-count"
                   type="range"
                   min={3}
                   max={10}
@@ -225,10 +227,11 @@ export default function GeneratorPage() {
 
               {/* Separator */}
               <div className="space-y-1">
-                <label className="text-sm text-text-secondary">
+                <label htmlFor="gen-separator" className="text-sm text-text-secondary">
                   Word Separator
                 </label>
                 <input
+                  id="gen-separator"
                   type="text"
                   value={separator}
                   onChange={(e) => setSeparator(e.target.value || "-")}

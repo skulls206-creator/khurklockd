@@ -118,6 +118,11 @@ export const cardItemSchema = z.object({
   expiryYear: z.string().regex(/^\d{2,4}$/, "YY or YYYY format"),
   cvv: z.string().regex(/^\d{3,4}$/, "3 or 4 digit CVV"),
   pin: z.string().optional(),
+  billingAddress: z.string().optional(),
+  billingCity: z.string().optional(),
+  billingState: z.string().optional(),
+  billingZip: z.string().optional(),
+  billingCountry: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -128,6 +133,9 @@ export const identityItemSchema = z.object({
   firstName: z.string().min(1),
   middleName: z.string().optional(),
   lastName: z.string().min(1),
+  gender: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  ssn: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -135,7 +143,36 @@ export const identityItemSchema = z.object({
   state: z.string().optional(),
   postalCode: z.string().optional(),
   country: z.string().optional(),
+  website: z.string().optional(),
+  driversLicense: z.string().optional(),
+  passportNumber: z.string().optional(),
+  nationality: z.string().optional(),
   idNumber: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const customFieldSchema = z.object({
+  name: z.string().min(1),
+  value: z.string(),
+  protected: z.boolean(),
+});
+
+export const secureNoteItemSchema = z.object({
+  ...baseItemFields,
+  type: z.literal("secure-note"),
+  content: z.string(),
+  customFields: z.array(customFieldSchema),
+});
+
+export const walletItemSchema = z.object({
+  ...baseItemFields,
+  type: z.literal("cryptocurrency"),
+  cryptoType: z.string().min(1),
+  walletAddress: z.string().min(1),
+  derivationPath: z.string().optional(),
+  privateKey: z.string().optional(),
+  seedPhraseBackedUp: z.boolean(),
+  balance: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -145,6 +182,8 @@ export const vaultItemSchema = z.discriminatedUnion("type", [
   noteItemSchema,
   cardItemSchema,
   identityItemSchema,
+  secureNoteItemSchema,
+  walletItemSchema,
 ]);
 
 // ── Vault Payload ────────────────────────────────────────────────

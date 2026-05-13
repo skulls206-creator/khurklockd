@@ -154,6 +154,7 @@ export function ToastContainer() {
   return (
     <div
       aria-label="Notifications"
+      aria-live="polite"
       className="fixed bottom-4 right-4 z-[100] flex flex-col-reverse gap-2"
     >
       {toasts.map((toast) => (

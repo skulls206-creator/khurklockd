@@ -94,10 +94,11 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 
         <input
           ref={ref}
-          type="text"
+          type="search"
           value={currentValue}
           onChange={handleChange}
           placeholder={placeholder}
+          aria-label={placeholder}
           className={[
             "w-full rounded-md border border-border pl-10 pr-8 py-2 text-sm",
             "bg-surface text-text-primary placeholder:text-text-muted",

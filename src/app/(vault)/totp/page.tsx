@@ -151,7 +151,14 @@ function TOTPCard({
 
       {/* Countdown */}
       <div className="mt-3 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
+        <div
+          className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={remaining}
+          aria-valuemin={0}
+          aria-valuemax={config.period ?? 30}
+          aria-label={`TOTP code expires in ${remaining} seconds`}
+        >
           <div
             className="h-full rounded-full transition-all duration-1000 ease-linear"
             style={{

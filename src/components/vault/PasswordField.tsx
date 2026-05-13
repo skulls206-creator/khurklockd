@@ -118,7 +118,7 @@ export function PasswordField({
 
       {/* Strength meter */}
       {showStrength && strength && (
-        <div className="space-y-1">
+        <div className="space-y-1" role="progressbar" aria-valuenow={strength.score} aria-valuemin={0} aria-valuemax={4} aria-label={`Password strength: ${strength.label}`}>
           <div className="flex gap-1">
             {[0, 1, 2, 3].map((level) => (
               <div

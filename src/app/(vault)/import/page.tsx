@@ -162,7 +162,7 @@ export default function ImportPage() {
           </svg>
           <p className="mb-1 text-lg font-medium">Drop your export file here</p>
           <p className="text-sm text-text-muted">or click to browse</p>
-          <input ref={fileInputRef} type="file" accept=".csv,.json" className="hidden" onChange={handleFileInput} />
+          <input ref={fileInputRef} type="file" accept=".csv,.json" className="hidden" onChange={handleFileInput} aria-label="Choose a CSV or JSON export file" />
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <span className="rounded-full bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">LastPass CSV</span>
             <span className="rounded-full bg-bg-elevated px-2 py-0.5 text-xs text-text-secondary">1Password JSON/CSV</span>
@@ -196,7 +196,7 @@ export default function ImportPage() {
 
       {/* Parsing spinner */}
       {state === "parsing" && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-bg-tertiary p-12">
+        <div role="status" className="flex flex-col items-center justify-center rounded-xl border border-border bg-bg-tertiary p-12">
           <div className="mb-3 h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           <p className="text-text-muted">Parsing file...</p>
         </div>
@@ -293,7 +293,7 @@ export default function ImportPage() {
 
       {/* Clear vault confirmation dialog */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={cancelClearVault}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={cancelClearVault} role="dialog" aria-modal="true" aria-label="Clear entire vault confirmation">
           <div
             className="mx-4 w-full max-w-md rounded-xl border border-danger/40 bg-bg-elevated p-6"
             onClick={(e) => e.stopPropagation()}

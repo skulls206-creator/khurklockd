@@ -32,6 +32,9 @@ import {
   getItemsByType as vmGetItemsByType,
   getFavorites as vmGetFavorites,
   getItemCount as vmGetItemCount,
+  getAllTags as vmGetAllTags,
+  getItemsByTag as vmGetItemsByTag,
+  getCountByType as vmGetCountByType,
   getSettings as vmGetSettings,
   updateSettings as vmUpdateSettings,
   isUnlocked,
@@ -75,10 +78,13 @@ export interface VaultContextValue {
 
   // Queries
   getItem: (id: string) => VaultItem | undefined;
-  searchItems: (query: string, type?: ItemType) => VaultItem[];
+  searchItems: (query: string, type?: ItemType, tag?: string, favoritesOnly?: boolean) => VaultItem[];
   getItemsByType: (type: ItemType) => VaultItem[];
   getFavorites: () => VaultItem[];
   getItemCount: () => number;
+  getAllTags: () => Array<{ tag: string; count: number }>;
+  getItemsByTag: (tag: string) => VaultItem[];
+  getCountByType: (type: ItemType) => number;
 
   // Settings
   updateSettings: (updates: Partial<VaultSettings>) => void;
@@ -89,6 +95,12 @@ export interface VaultContextValue {
 
   // Refresh items from vault (after mutations)
   refreshItems: () => void;
+
+  // Sidebar filter state
+  selectedTag: string | null;
+  setSelectedTag: (tag: string | null) => void;
+  showFavoritesOnly: boolean;
+  setShowFavoritesOnly: (show: boolean) => void;
 }
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -102,6 +114,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<VaultSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [vaultFilePath, setVaultFilePath] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Keep a ref to avoid stale closures in the lock timer callback
   const stateRef = useRef({ vaultState, error });
@@ -117,7 +131,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         const allItems = vmGetItemsByType("login")
           .concat(vmGetItemsByType("note"))
           .concat(vmGetItemsByType("card"))
-          .concat(vmGetItemsByType("identity"));
+          .concat(vmGetItemsByType("identity"))
+          .concat(vmGetItemsByType("secure-note"))
+          .concat(vmGetItemsByType("cryptocurrency"));
         setItems(allItems);
         setSettings(vmGetSettings());
         setVaultFilePath(getVaultFilePath());
@@ -148,7 +164,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         const allItems = vmGetItemsByType("login")
           .concat(vmGetItemsByType("note"))
           .concat(vmGetItemsByType("card"))
-          .concat(vmGetItemsByType("identity"));
+          .concat(vmGetItemsByType("identity"))
+          .concat(vmGetItemsByType("secure-note"))
+          .concat(vmGetItemsByType("cryptocurrency"));
         setItems(allItems);
         const s = vmGetSettings();
         setSettings(s);
@@ -173,7 +191,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         const allItems = vmGetItemsByType("login")
           .concat(vmGetItemsByType("note"))
           .concat(vmGetItemsByType("card"))
-          .concat(vmGetItemsByType("identity"));
+          .concat(vmGetItemsByType("identity"))
+          .concat(vmGetItemsByType("secure-note"))
+          .concat(vmGetItemsByType("cryptocurrency"));
         setItems(allItems);
         const s = vmGetSettings();
         setSettings(s);
@@ -270,9 +290,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const searchItems = useCallback((query: string, type?: ItemType): VaultItem[] => {
+  const searchItems = useCallback((query: string, type?: ItemType, tag?: string, favoritesOnly?: boolean): VaultItem[] => {
     try {
-      return vmSearchItems(query, type);
+      return vmSearchItems(query, type, tag, favoritesOnly);
     } catch {
       return [];
     }
@@ -297,6 +317,30 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getItemCount = useCallback((): number => {
     try {
       return vmGetItemCount();
+    } catch {
+      return 0;
+    }
+  }, []);
+
+  const getAllTags = useCallback((): Array<{ tag: string; count: number }> => {
+    try {
+      return vmGetAllTags();
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const getItemsByTag = useCallback((tag: string): VaultItem[] => {
+    try {
+      return vmGetItemsByTag(tag);
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const getCountByType = useCallback((type: ItemType): number => {
+    try {
+      return vmGetCountByType(type);
     } catch {
       return 0;
     }
@@ -368,10 +412,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       getItemsByType,
       getFavorites,
       getItemCount,
+      getAllTags,
+      getItemsByTag,
+      getCountByType,
       updateSettings: updateSettingsFn,
       generatePassword: genPassword,
       resetLockTimer,
       refreshItems,
+      selectedTag,
+      setSelectedTag,
+      showFavoritesOnly,
+      setShowFavoritesOnly,
     }),
     [
       vaultState,
@@ -393,10 +444,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       getItemsByType,
       getFavorites,
       getItemCount,
+      getAllTags,
+      getItemsByTag,
+      getCountByType,
       updateSettingsFn,
       genPassword,
       resetLockTimer,
       refreshItems,
+      selectedTag,
+      showFavoritesOnly,
     ],
   );
 

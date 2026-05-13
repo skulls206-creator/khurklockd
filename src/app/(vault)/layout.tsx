@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { VaultProvider, useVault } from "@/hooks/useVault";
 import { UnlockScreen } from "@/components/vault/UnlockScreen";
 import { Sidebar } from "@/components/vault/Sidebar";
@@ -188,7 +188,11 @@ function VaultShell() {
   };
 
   if (vaultState === "uninitialized" || vaultState === "locked" || vaultState === "unlocking" || vaultState === "error") {
-    return <UnlockScreen />;
+    return (
+      <main className="flex-1">
+        <UnlockScreen />
+      </main>
+    );
   }
 
   return (
@@ -198,6 +202,7 @@ function VaultShell() {
         {renderContent()}
       </main>
       <ToastContainer />
+      
     </div>
   );
 }

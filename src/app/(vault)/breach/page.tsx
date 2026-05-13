@@ -122,6 +122,7 @@ export default function BreachPage() {
                   }}
                   role="button"
                   tabIndex={0}
+                  aria-expanded={isExpanded}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-danger">

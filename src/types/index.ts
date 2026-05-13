@@ -5,7 +5,13 @@
 export type ItemId = string;
 
 /** Categories of items stored in the vault. */
-export type ItemType = "login" | "note" | "card" | "identity";
+export type ItemType =
+  | "login"
+  | "note"
+  | "card"
+  | "identity"
+  | "secure-note"
+  | "cryptocurrency";
 
 /** Timestamps stored as ISO-8601 strings. */
 export type ISODateTime = string;
@@ -23,6 +29,8 @@ export interface LoginItem {
   notes?: string;
   favorite: boolean;
   tags: string[];
+  /** Breach monitoring status for this login. */
+  breachStatus?: "safe" | "breached" | "unknown";
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }
@@ -49,6 +57,11 @@ export interface CardItem {
   expiryYear: string;
   cvv: string;
   pin?: string;
+  billingAddress?: string;
+  billingCity?: string;
+  billingState?: string;
+  billingZip?: string;
+  billingCountry?: string;
   notes?: string;
   favorite: boolean;
   tags: string[];
@@ -64,6 +77,9 @@ export interface IdentityItem {
   firstName: string;
   middleName?: string;
   lastName: string;
+  gender?: string;
+  dateOfBirth?: string;
+  ssn?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -71,6 +87,10 @@ export interface IdentityItem {
   state?: string;
   postalCode?: string;
   country?: string;
+  website?: string;
+  driversLicense?: string;
+  passportNumber?: string;
+  nationality?: string;
   idNumber?: string;
   notes?: string;
   favorite: boolean;
@@ -79,8 +99,43 @@ export interface IdentityItem {
   updatedAt: ISODateTime;
 }
 
+export interface SecureNoteItem {
+  id: ItemId;
+  type: "secure-note";
+  name: string;
+  content: string;
+  customFields: { name: string; value: string; protected: boolean }[];
+  favorite: boolean;
+  tags: string[];
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export interface WalletItem {
+  id: ItemId;
+  type: "cryptocurrency";
+  name: string;
+  cryptoType: string;
+  walletAddress: string;
+  derivationPath?: string;
+  privateKey?: string;
+  seedPhraseBackedUp: boolean;
+  balance?: string;
+  notes?: string;
+  favorite: boolean;
+  tags: string[];
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
 /** Union of all vault item types. */
-export type VaultItem = LoginItem | NoteItem | CardItem | IdentityItem;
+export type VaultItem =
+  | LoginItem
+  | NoteItem
+  | CardItem
+  | IdentityItem
+  | SecureNoteItem
+  | WalletItem;
 
 // ── Vault ─────────────────────────────────────────────────────
 

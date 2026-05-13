@@ -98,6 +98,7 @@ export function UnlockScreen() {
         <div className="flex rounded-lg bg-surface p-1 mb-6">
           <button
             onClick={() => switchMode("create")}
+            aria-pressed={mode === "create"}
             className={[
               "flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors",
               mode === "create"
@@ -109,6 +110,7 @@ export function UnlockScreen() {
           </button>
           <button
             onClick={() => switchMode("open")}
+            aria-pressed={mode === "open"}
             className={[
               "flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors",
               mode === "open"

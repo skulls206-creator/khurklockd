@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useRef,
 } from "react";
 
@@ -18,6 +19,8 @@ export interface ModalProps {
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -53,6 +56,8 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
   useEffect(() => {
     if (open) {
+      // Save currently focused element for restoration on close
+      previousFocusRef.current = document.activeElement as HTMLElement;
       document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
 
@@ -68,6 +73,10 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      // Restore focus when modal closes
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
+        previousFocusRef.current.focus();
+      }
     };
   }, [open, handleKeyDown]);
 
@@ -90,7 +99,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       ].join(" ")}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-labelledby={title ? titleId : undefined}
     >
       <div
         ref={contentRef}
@@ -102,7 +111,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       >
         {title && (
           <div className="px-6 pt-6 pb-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-text-primary">
+            <h2 id={titleId} className="text-lg font-semibold text-text-primary">
               {title}
             </h2>
           </div>

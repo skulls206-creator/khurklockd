@@ -51,8 +51,13 @@ export default function RootLayout({
         <meta name="application-name" content="Khurklockd" />
       </head>
       <body className="min-h-full flex flex-col">
+        <a href="#main-content" className="skip-to-content">
+          Skip to content
+        </a>
         <PWARegister />
-        {children}
+        <div id="main-content" className="flex-1 flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );
