@@ -200,7 +200,7 @@ function VaultShell() {
               </p>
               <div className="mt-8">
                 <button
-                  onClick={handleCreateItem("cryptocurrency")}
+                  onClick={() => handleCreateItem("cryptocurrency")}
                   className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/80 transition-colors"
                 >
                   Add Wallet Entry
