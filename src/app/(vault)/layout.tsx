@@ -9,6 +9,7 @@ import { ItemList } from "@/components/vault/ItemList";
 import { ItemDetail } from "@/components/vault/ItemDetail";
 import { ItemEditor } from "@/components/vault/ItemEditor";
 import { ToastContainer } from "@/components/ui/Toast";
+import { ImportPage } from "@/components/vault/ImportPage";
 import type { VaultItem, ItemType, ViewRoute } from "@/types";
 
 function VaultShell() {
@@ -172,6 +173,8 @@ function VaultShell() {
             />
           </div>
         );
+      case "import":
+        return <ImportPage />;
       default:
         return (
           <div className="p-6">

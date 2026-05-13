@@ -259,4 +259,5 @@ export type ViewRoute =
   | "wallet"
   | "settings"
   | "breach"
-  | "emergency";
+  | "emergency"
+  | "import";
