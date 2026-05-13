@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Khurklockd — Encrypted Digital Vault",
   description:
-    "A local-first, encrypted password manager and digital vault for Web3. Argon2 + AES-256-GCM encryption, TOTP, breach monitoring, and Lighthouse.Storage backup.",
+    "A local-first, encrypted password manager and digital vault. Argon2id + AES-256-GCM encryption, TOTP generator, breach monitoring, CSV/JSON import, and emergency access.",
   manifest: "/khurklockd/manifest.json",
   appleWebApp: {
     capable: true,

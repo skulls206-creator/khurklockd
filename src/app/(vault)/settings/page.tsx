@@ -141,7 +141,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-text-muted">Storage</span>
-            <span className="text-text-primary">Local-First + Lighthouse</span>
+            <span className="text-text-primary">Local-First</span>
           </div>
           <div className="flex justify-between">
             <span className="text-text-muted">Platform</span>

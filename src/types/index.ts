@@ -120,10 +120,6 @@ export interface VaultSettings {
   argon2Parallelism: number;
   /** Preferred password generator defaults. */
   generatorDefaults: GeneratorConfig;
-  /** Lighthouse.Storage CID of the last backup (null if none). */
-  lastBackupCid: string | null;
-  /** ISO-8601 timestamp of last backup. */
-  lastBackupAt: ISODateTime | null;
   /** Emergency access contacts. */
   emergencyContacts: EmergencyContact[];
   /** Dead Man's Switch configuration. */
@@ -213,30 +209,6 @@ export interface DeadManSwitchConfig {
   action: "notify" | "share" | "both";
   /** Whether the switch is armed. */
   armed: boolean;
-}
-
-// ── Lighthouse Sync ───────────────────────────────────────────
-
-export interface SyncManifest {
-  /** Lighthouse.Storage CID of the latest backup. */
-  cid: string;
-  /** ISO-8601 timestamp of upload. */
-  uploadedAt: ISODateTime;
-  /** Size of the encrypted blob in bytes. */
-  sizeBytes: number;
-  /** Vault version this backup was created with. */
-  vaultVersion: string;
-}
-
-export interface LighthouseStatus {
-  /** Whether the API key is configured. */
-  configured: boolean;
-  /** Total bytes uploaded this month. */
-  bytesUploadedThisMonth: number;
-  /** Lighthouse free tier cap (100 MB). */
-  capBytes: number;
-  /** Percentage of cap used. */
-  capUsedPercent: number;
 }
 
 // ── UI State ──────────────────────────────────────────────────

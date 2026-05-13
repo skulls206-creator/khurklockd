@@ -5,7 +5,7 @@
 **Author:** Khurk Services / Nebula Engineering
 **Repository:** [github.com/skulls206-creator/khurklockd](https://github.com/skulls206-creator/khurklockd)
 
-> A local-first, zero-knowledge password manager with optional Lighthouse.Storage (IPFS) encrypted backup. All cryptography happens client-side in the browser. No plaintext ever leaves the user's machine.
+> A local-first, zero-knowledge password manager. All cryptography happens client-side in the browser. No plaintext ever leaves the user's machine.
 
 ---
 
@@ -87,19 +87,13 @@ interface VaultSettings {
   showStrengthIndicators: boolean;
   /** Default password generation config */
   defaultGeneratorConfig: GeneratorConfig;
-  /** Lighthouse backup CIDs with timestamps */
-  backupCIDs: BackupRecord[];
   /** Theme preference */
   theme: "system" | "dark" | "light";
   /** Language locale for i18n */
   locale: string;
 }
 
-interface BackupRecord {
-  cid: string;
-  timestamp: string; // ISO 8601
-  sizeBytes: number;
-}
+
 ```
 
 #### 1.3.2 VaultItem Discriminated Union
@@ -235,11 +229,10 @@ interface IdentityItem extends VaultItemBase {
 
 ### 1.5 Vault Size Constraints
 
-- **Maximum encrypted vault size:** 100 MB (to respect the Lighthouse.Storage 100 MB free-tier cap).
-- **Soft warning threshold:** 80 MB — the app shows a non-blocking banner: "Your vault is approaching the 100 MB Lighthouse backup limit. Consider removing unused items or attachments."
-- **Hard limit:** 100 MB — backup uploads are rejected. Local saves still work. The user is directed to upgrade to Pro for a higher cap (future).
+- **No hard upper limit** — vault size is limited only by available disk space and browser memory.
+- **Soft recommendation:** vaults over 50 MB may perform slower on lower-end devices. The app shows a non-blocking banner: "Your vault is large. Consider removing unused items to improve performance."
 - Size is measured as `new Blob([JSON.stringify(vault)]).size` in bytes.
-- Typical vault sizes: 1,000 login items with notes and TOTP secrets ~ 500 KB. 100 MB accommodates ~200,000 items or vaults with large embedded attachments (future feature).
+- Typical vault sizes: 1,000 login items with notes and TOTP secrets ~ 500 KB. 50 MB accommodates ~100,000 items or vaults with large embedded attachments (future feature).
 
 ---
 
@@ -319,7 +312,7 @@ Input:  VaultPayload (serialized JSON string)
 
 - Nonce is **12 bytes** (96 bits), the recommended size for AES-GCM.
 - Generated via `crypto.getRandomValues(new Uint8Array(12))`.
-- A **new nonce is generated for every encryption operation** — write, backup, re-encrypt. Never reuse a nonce with the same key.
+- A **new nonce is generated for every encryption operation** — write, re-encrypt, export. Never reuse a nonce with the same key.
 - Nonce reuse with AES-GCM catastrophically breaks both confidentiality and authentication. The architecture prevents this by always generating fresh random nonces per operation.
 - Nonce is stored in the vault file as a hex string (`iv` field) alongside the ciphertext.
 
@@ -391,10 +384,10 @@ Input:  encryptedPayload (Base64 string)
 #### 2.4.2 What NEVER Happens
 
 - Plaintext is **never** written to `localStorage` or `sessionStorage`.
-- Plaintext is **never** written to IndexedDB (only encrypted blobs go there for Lighthouse cache).
+- Plaintext is **never** written to IndexedDB (only vault metadata such as last-opened file path and preferences).
 - The master password is **never** stored anywhere — not hashed, not cached. It is held only for the duration of the Argon2id call, then the string is zeroed.
 - Derived keys are **never** sent over the network. The `primaryKey` CryptoKey object is `extractable: false` so raw bytes cannot be exported.
-- The `encryptedPayload` is **never** sent to any server except during Lighthouse upload, and even then it is the already-encrypted ciphertext.
+- The `encryptedPayload` is **never** sent to any server. All encryption and decryption happens locally.
 - Console.log of vault data is stripped by an ESLint rule (`no-restricted-syntax`) and a build-time check.
 
 #### 2.4.3 Lock Timer
@@ -417,8 +410,7 @@ Input:  encryptedPayload (Base64 string)
 | Master password | Critical — unlocks all secrets | User's memory only |
 | Derived key | Critical — decrypts vault | Browser memory, non-extractable |
 | Decrypted VaultPayload | Critical — plaintext secrets | Browser memory, auto-locked |
-| Lighthouse API key | Medium — allows backup upload/download | VaultSettings (encrypted inside vault) |
-| Backup CIDs | Low — public on IPFS, identifies encrypted blobs | VaultSettings + Lighthouse index |
+
 
 ### 3.2 Adversaries
 
@@ -426,8 +418,7 @@ Input:  encryptedPayload (Base64 string)
 |-----------|-----------|------------|
 | **Attacker with vault file** | Has stolen the `.khurklockd` file. May attempt offline brute-force. | Argon2id (64 MiB memory-hard) makes GPU brute-force impractical. AES-256-GCM prevents decryption without key. |
 | **Malicious browser extension** | Can read DOM, access JS heap, intercept events. | Auto-lock minimizes plaintext window. No plaintext in DOM except actively displayed fields — which are cleared on blur. Passwords rendered in `type="password"` inputs by default. |
-| **Network MITM** | Intercepts Lighthouse upload traffic. | All data encrypted client-side before upload. MITM sees only AES-256-GCM ciphertext. No key material in transit. |
-| **Compromised Lighthouse/IPFS node** | Controls a storage node hosting backup blobs. | Zero-knowledge — node sees only encrypted blobs and public CIDs. Cannot decrypt without master password. |
+
 | **Physical access to unlocked device** | User walks away from unlocked computer. | Lock timer (default 5 min). Manual lock via system tray or keyboard shortcut. |
 | **Cloud storage provider** | User syncs `.khurklockd` file via Dropbox/Google Drive/iCloud. | File is always encrypted. Provider sees only ciphertext. |
 | **Malware on user's machine** | Keylogger, screen capture, clipboard scraper. | OUT OF SCOPE — no software defense against OS-level compromise. User is advised to maintain endpoint security. |
@@ -439,8 +430,7 @@ Input:  encryptedPayload (Base64 string)
 | **Brute-force on vault file** | Attacker runs dictionary/brute-force against stolen `.khurklockd`. | Argon2id with 64 MiB memory and 3 iterations makes each guess expensive (~200ms on modern hardware). AES-256 key space is 2^256. | Weak master passwords remain vulnerable despite KDF. App enforces minimum 8 characters with strength meter. |
 | **Memory scraping** | Malicious extension reads decrypted vault from JS heap. | Auto-lock clears plaintext. No global variables hold decrypted data after lock. Items are loaded on demand, not all at once. | While unlocked, extension could access currently displayed data. Mitigated by CSP and extension permission model. |
 | **File tampering** | Attacker modifies `.khurklockd` to inject malicious payloads or corrupt data. | HMAC-SHA256 integrity check catches any modification. Decryption is aborted before any plaintext is processed. | None — tampering is reliably detected. |
-| **MITM during backup/restore** | Attacker intercepts HTTPS traffic to Lighthouse API. | All data is encrypted client-side. HTTPS provides transport security. MITM sees only encrypted blobs + public CIDs. | TLS compromise could reveal CIDs (but not contents). |
-| **Compromised Lighthouse node** | IPFS node operator inspects stored data. | Zero-knowledge: vault is encrypted before upload. Node cannot derive key without master password. | Node could refuse to serve data (availability attack). Multiple IPFS replicas mitigate this. |
+
 | **Nonce reuse** | Bug reuses AES-GCM nonce across encryptions. | Code review: nonce generated fresh via `crypto.getRandomValues()` on every `encryptVault()` call. Unit tests assert uniqueness. | PRNG failure (extremely unlikely with CSPRNG). |
 
 ### 3.4 Out-of-Scope Threats (Acknowledged, Not Mitigated)
@@ -462,7 +452,7 @@ Input:  encryptedPayload (Base64 string)
 3. The Web Crypto API implementation is correct (browser vendor's responsibility).
 4. The user chooses a strong master password (>= 12 characters, not in breach databases).
 5. The user keeps their operating system and browser updated.
-6. The `@lighthouse-web3/sdk` package is not malicious (pinned to a specific version and hash-verified).
+
 
 ---
 
@@ -704,137 +694,6 @@ User                        App                         Browser APIs
  │       │◄──────────────────┤                              │
 ```
 
-### Flow 4: Lighthouse Backup
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   LIGHTHOUSE BACKUP FLOW                         │
-└─────────────────────────────────────────────────────────────────┘
-
-User                        App                      Lighthouse/IPFS
- │                           │                              │
- │  Click "Backup Now"       │                              │
- ├──────────────────────────►│                              │
- │                           │                              │
- │                           │  Check vault size             │
- │                           │  ┌─> 80 MB → Show warning    │
- │                           │  └─> 100 MB → Reject,        │
- │                           │               suggest Pro    │
- │                           │                              │
- │                           │  Serialize current Vault      │
- │                           │  (already encrypted)          │
- │                           │                              │
- │                           │  Read Lighthouse API key      │
- │                           │  from VaultSettings            │
- │                           │                              │
- │                           │  POST /upload                  │
- │                           │  Body: encrypted vault blob   │
- │                           ├─────────────────────────────►│
- │                           │                              │
- │                           │                      ┌───────┤
- │                           │                      │ Store │
- │                           │                      │ blob  │
- │                           │                      │ on    │
- │                           │                      │ IPFS  │
- │                           │                      └───┬───┤
- │                           │                          │   │
- │                           │  ◄── CID (e.g.,           │   │
- │                           │       QmXxx...xxx)        │   │
- │                           │                          │   │
- │                           │  Store in memory:          │   │
- │                           │  VaultSettings.backupCIDs  │   │
- │                           │    .push({                 │   │
- │                           │      cid,                  │   │
- │                           │      timestamp,            │   │
- │                           │      sizeBytes             │   │
- │                           │    })                      │   │
- │                           │                              │
- │                           │  Save vault (writes          │
- │                           │  updated backupCIDs to      │
- │                           │  the .khurklockd file)       │
- │                           │                              │
- │       │                   │                              │
- │       │  "Backup complete │                              │
- │       │   CID: QmXxx..."  │                              │
- │       │◄──────────────────┤                              │
-```
-
-### Flow 5: Lighthouse Restore
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   LIGHTHOUSE RESTORE FLOW                        │
-└─────────────────────────────────────────────────────────────────┘
-
-User                        App                      Lighthouse/IPFS
- │                           │                              │
- │  Click "Restore"          │                              │
- ├──────────────────────────►│                              │
- │                           │                              │
- │                           │  Read backupCIDs from         │
- │                           │  VaultSettings (in vault)     │
- │                           │                              │
- │  ┌──────────────────────┐ │                              │
- │  │ CID list with        │ │                              │
- │  │ timestamps shown     │ │                              │
- │  │ Select one to restore│ │                              │
- │  └──────────┬───────────┘ │                              │
- │             │             │                              │
- │             ├────────────►│                              │
- │                           │                              │
- │                           │  GET /download?cid=QmXxx     │
- │                           ├─────────────────────────────►│
- │                           │                              │
- │                           │                      ┌───────┤
- │                           │                      │ Fetch │
- │                           │                      │ blob  │
- │                           │                      │ from  │
- │                           │                      │ IPFS  │
- │                           │                      └───┬───┤
- │                           │                          │   │
- │                           │  ◄── encrypted blob      │   │
- │                           │                          │   │
- │                           │  blob IS the Vault.json   │   │
- │                           │  (encrypted, never        │   │
- │                           │   decrypted on server)    │   │
- │                           │                              │
- │                           │  Parse JSON → Vault object   │
- │                           │  Extract encryptedPayload,   │
- │                           │  iv, salt, integrityTag      │
- │                           │                              │
- │                           │  Prompt for master password   │
- │                           │  (to verify/decrypt)          │
- │                           │                              │
- │  Enter password          │                              │
- ├──────────────────────────►│                              │
- │                           │                              │
- │                           │  Argon2id(password, salt)     │
- │                           │  → candidateKey               │
- │                           │                              │
- │                           │  Verify HMAC                  │
- │                           │  Decrypt AES-256-GCM          │
- │                           │  → VaultPayload               │
- │                           │                              │
- │  ┌──────────────────────┐ │                              │
- │  │ Merge or Replace?    │ │                              │
- │  │ - Replace: discard   │ │                              │
- │  │   current, use this  │ │                              │
- │  │ - Merge: add missing │ │                              │
- │  │   items from backup  │ │                              │
- │  └──────────┬───────────┘ │                              │
- │             │             │                              │
- │             ├────────────►│                              │
- │                           │                              │
- │                           │  Apply merge/replace          │
- │                           │  Re-encrypt with current key  │
- │                           │  Save to .khurklockd file     │
- │                           │                              │
- │       │                   │                              │
- │       │  "Vault restored  │                              │
- │       │   successfully"   │                              │
- │       │◄──────────────────┤                              │
-```
-
 ---
 
 ## 5. Component Architecture
@@ -864,8 +723,6 @@ khurklockd/
 │   │   │   │   └── page.tsx          # Digital wallet view
 │   │   │   ├── breach/
 │   │   │   │   └── page.tsx          # Breach monitoring results
-│   │   │   ├── backup/
-│   │   │   │   └── page.tsx          # Lighthouse backup/restore
 │   │   │   ├── emergency/
 │   │   │   │   └── page.tsx          # Emergency access settings
 │   │   │   └── settings/
@@ -911,10 +768,6 @@ khurklockd/
 │   │   │   ├── BreachBanner.tsx      # Alert banner for breached items
 │   │   │   ├── BreachList.tsx        # List of breached items
 │   │   │   └── BreachDetail.tsx      # Single breach detail card
-│   │   ├── backup/
-│   │   │   ├── BackupPanel.tsx       # Upload backup button + CID list
-│   │   │   ├── RestorePanel.tsx      # Select CID + restore
-│   │   │   └── StorageMeter.tsx      # Visual bar showing storage usage
 │   │   ├── emergency/
 │   │   │   ├── ContactList.tsx       # List of emergency contacts
 │   │   │   ├── AddContactForm.tsx    # Add trusted contact form
@@ -935,9 +788,6 @@ khurklockd/
 │   │   │   ├── file-io.ts            # loadFile, saveFile (File System Access API)
 │   │   │   ├── lock.ts               # lockVault, startLockTimer, resetLockTimer
 │   │   │   └── schema.ts             # Zod schemas for runtime validation
-│   │   ├── sync/                     # Lighthouse.Storage integration
-│   │   │   ├── lighthouse.ts         # backup, restore, listBackups, getStorageStatus
-│   │   │   └── cap.ts                # enforceCap, checkVaultSize
 │   │   ├── generator/                # Password generation
 │   │   │   ├── password.ts           # generatePassword, generatePassphrase
 │   │   │   └── strength.ts           # calculateStrength (zxcvbn or custom)
@@ -985,7 +835,6 @@ khurklockd/
 │   │       └── breach.test.ts
 │   ├── integration/
 │   │   ├── vault-flow.test.ts        # Create → unlock → edit → save
-│   │   ├── backup-flow.test.ts       # Backup → restore
 │   │   └── breach-scan.test.ts
 │   └── components/                   # Component tests
 │       ├── UnlockForm.test.tsx
@@ -1089,30 +938,6 @@ Behavior:
   - Fallback: saveFile creates a Blob, generates a download link,
     auto-clicks it. User must manually replace their file.
   - Uses .khurklockd extension filter in picker.
-```
-
-#### 5.2.5 `src/lib/sync/lighthouse.ts`
-
-```
-Exports:
-  backup(vault: Vault, apiKey: string): Promise<string>      // returns CID
-  restore(cid: string, apiKey: string): Promise<Vault>       // returns encrypted Vault
-  listBackups(apiKey: string): Promise<BackupRecord[]>
-  getStorageStatus(apiKey: string): Promise<{ usedBytes: number; capBytes: number }>
-
-Behavior:
-  - backup: JSON-serializes the already-encrypted Vault object, uploads via
-    Lighthouse SDK uploadEncrypted(). Returns the CID string.
-  - restore: Downloads via Lighthouse SDK downloadEncrypted(cid, apiKey).
-    Returns the raw encrypted Vault object — decryption is handled by vault-manager.
-  - listBackups: Reads backupCIDs from activeVault.settings. Does NOT query
-    Lighthouse for a list (Lighthouse does not index by user — CIDs must be
-    tracked locally).
-  - getStorageStatus: Lighthouse SDK does not natively expose storage quota.
-    Implementation tracks total uploaded bytes in VaultSettings and compares
-    against the 100 MB cap client-side.
-  - enforces 100 MB cap before upload: if vault size + existing uploads > 100 MB,
-    rejects with an error message suggesting upgrade or cleanup.
 ```
 
 #### 5.2.6 `src/lib/generator/password.ts`
@@ -1281,7 +1106,7 @@ Behavior:
     and VaultSettings.
   - checkDeadManSwitch is called on vault unlock. If (now - lastCheckIn) >
     (checkInterval + gracePeriod), the switch triggers.
-  - When triggered: encrypts the vault's keySalt and Lighthouse CID with
+  - When triggered: encrypts the vault's keySalt and vault file metadata with
     each contact's PGP public key, then queues an email (via the user's
     connected Gmail, if available) with instructions + encrypted blob.
   - Each contact receives only their own encrypted shard — no single contact
@@ -1302,7 +1127,6 @@ Behavior:
 | **Key Derivation** | hash-wasm | 2.x | Argon2id WebAssembly implementation. 5-10x faster than pure JS. Used ONLY for Argon2id — not for AES or HMAC. No native Node dependency. |
 | **Validation** | zod | 3.x | Runtime schema validation for vault file parsing, API responses, user input. Type inference from schemas (z.infer). |
 | **Password Strength** | zxcvbn | 4.x | Dropbox's password strength estimator. Analyzes entropy, patterns, and common passwords. |
-| **IPFS Backup** | @lighthouse-web3/sdk | latest | Official Lighthouse.Storage SDK. Handles upload/download with API key auth. |
 | **Testing** | Vitest | 2.x | Vite-native test runner. Fast, TypeScript-first, compatible with Jest assertions. |
 | **Component Testing** | React Testing Library | 16.x | DOM-based component testing. User-centric queries. |
 | **Linting** | ESLint | 9.x | Next.js default config + security rules (no-console, no-eval). |
@@ -1312,7 +1136,7 @@ Behavior:
 | **QR Scanning** | jsQR | latest | Pure JS QR code reader. No WASM dependency. Fallback to Barcode Detection API where available. |
 | **QR Generation** | qrcode | latest | Generates QR codes for TOTP setup export. |
 | **File Picker** | File System Access API | Browser native | showOpenFilePicker / showSaveFilePicker for native-like file dialogs. Fallback: `<input type="file">`. |
-| **Session Cache** | IndexedDB | Browser native | Stores vault metadata (file path, last opened, backup CIDs) across sessions. Never stores plaintext. |
+| **Session Cache** | IndexedDB | Browser native | Stores vault metadata (file path, last opened, preferences) across sessions. Never stores plaintext. |
 | **Internationalization** | next-intl | latest | i18n routing, message extraction, locale detection. |
 | **CI/CD** | GitHub Actions | — | Build + test + lint on PRs. Deploy docs to GitHub Pages. |
 | **Hosting** | Vercel / Netlify | — | Static export compatible (no server needed — all logic is client-side). |
@@ -1336,14 +1160,13 @@ Behavior:
 | **AES-256-GCM encryption** | Yes | Yes | Yes | Yes | Yes | All major competitors use AES-256. Khurklockd uses GCM mode. |
 | **Argon2 key derivation** | Yes | No (PBKDF2) | No (PBKDF2) | No (PBKDF2) | Yes (Argon2id) | Bitwarden adopted Argon2id in 2023. 1Password uses PBKDF2 + Secret Key. |
 | **File-based vault (.khurklockd)** | Yes | No | No | No | No | Unique differentiator — vault is a portable file you own. |
-| **Optional IPFS backup (Lighthouse)** | Yes | No | No | No | No | Unique differentiator — decentralized, censorship-resistant backup. |
 | **TOTP built-in** | Yes | Yes | Yes | Yes | Yes (Premium) | Bitwarden requires Premium for TOTP. |
 | **Breach monitoring** | Yes | Yes (Watchtower) | Yes | Yes | Yes (Premium) | Khurklockd uses HIBP k-anonymity; Bitwarden requires Premium. |
 | **Emergency access** | Yes | Yes (Family) | Yes | Yes | Yes (Premium) | Khurklockd's Dead Man's Switch is unique — time-based, contact-triggered. |
 | **Digital wallet** | Yes | Yes | Yes | Yes | Yes | Card/identity storage in all competitors. |
 | **Password generator** | Yes | Yes | Yes | Yes | Yes | Table stakes feature. |
 | **Open source** | TBD | No | No | No | Yes | Bitwarden is GPLv3. Khurklockd license TBD — considering AGPLv3 or Business Source License. |
-| **Free tier** | Yes (full) | Limited (no sharing) | Limited (1 device) | Limited (1 device type) | Yes (full) | Khurklockd free tier includes ALL features except Lighthouse backup. |
+| **Free tier** | Yes (full) | Limited (no sharing) | Limited (1 device) | Limited (1 device type) | Yes (full) | Khurklockd free tier includes ALL features. |
 | **Browser extension** | Planned (Phase 3) | Yes | Yes | Yes | Yes | All competitors have mature browser extensions. Khurklockd plans basic auto-fill. |
 | **Offline access** | Yes (always) | Yes (cached) | Yes (cached) | Yes (cached) | Yes | Khurklockd is offline-first by design. Others cache but require periodic sync. |
 | **Desktop app** | Web app (PWA) | Yes (native) | Yes (native) | Yes (native) | Yes (native) | Khurklockd is a web app; PWA for offline. No Electron wrapper planned. |
@@ -1375,18 +1198,18 @@ Behavior:
 
 **Exit criteria:** End-to-end flow works — create vault, add logins/notes, save, close, reopen, unlock, view items. Build passes. 80%+ test coverage on crypto modules.
 
-### Phase 2 — TOTP, Wallet, Breach, Backup (Weeks 5–8)
+### Phase 2 — TOTP, Wallet, Breach, Settings (Weeks 5–8)
 
-**Goal:** Feature-complete personal password manager with backup.
+**Goal:** Feature-complete personal password manager.
 
 | Week | Deliverables |
 |------|-------------|
 | 5 | TOTP engine: key import (Base32), code generation, countdown, QR scanning for setup. TOTPView UI. |
-| 6 | Digital wallet UI (card/identity views). Lighthouse.Storage integration: backup upload, restore download, CID tracking, 100 MB cap enforcement. BackupPanel + RestorePanel UI. |
+| 6 | Digital wallet UI (card/identity views). Vault import/export functionality. |
 | 7 | Breach monitoring module: HIBP k-anonymity API, vault scan, breach alert UI. BreachBanner + BreachList components. |
-| 8 | Settings page: security (Argon2id params, lock timeout, clipboard), appearance (theme, locale), about. Storage meter. Integration tests for backup/restore flow. |
+| 8 | Settings page: security (Argon2id params, lock timeout, clipboard), appearance (theme, locale), about. Integration tests for end-to-end vault flow. |
 
-**Exit criteria:** All Phase 2 features work end-to-end. Lighthouse backup/restore verified with real API key. Breach scanning tested against known-breached email.
+**Exit criteria:** All Phase 2 features work end-to-end. Breach scanning tested against known-breached email.
 
 ### Phase 3 — Emergency Access, Sharing, Extension (Weeks 9–14)
 
@@ -1437,14 +1260,13 @@ Behavior:
 
 | Feature | Details |
 |---------|---------|
-| Lighthouse encrypted backup | 100 MB storage on IPFS via Lighthouse |
 | Emergency access | Trusted contacts + Dead Man's Switch |
 | Priority support | Email support, 24-hour response |
 | Breach monitoring | Automatic weekly scan (background) |
 | Future: Duress password | Decoy vault with alternate master password |
 | Future: Travel mode | Remove sensitive items temporarily |
 
-**Value proposition:** Backup + peace of mind. The backup is the primary conversion driver — users who want offsite backup need Pro.
+**Value proposition:** Peace of mind with emergency access and priority support. Users who want enhanced security features and support need Pro.
 
 ### 9.3 Business Tier — "Khurklockd Business" ($5/user/month, minimum 5 users)
 
@@ -1461,7 +1283,7 @@ Behavior:
 ### 9.4 Revenue Model Notes
 
 - **No ads. No data mining. No tracking.** Monetization is through subscriptions only.
-- **Lighthouse.Storage costs:** 100 MB of IPFS storage is inexpensive. At ~$0.05/GB/month for IPFS pinning, 100 MB costs ~$0.005/month per user. Even at scale, infrastructure costs are minimal.
+- **Infrastructure costs:** Khurklockd has minimal server-side infrastructure costs. The app is client-side with no hosted backend. Costs are limited to the static site hosting and domain.
 - **Payment processing:** Stripe (or similar). No crypto payments in MVP.
 - **Free trial:** 14-day Pro trial for new users. No credit card required.
 - **Open source vs. business model:** If licensed under AGPLv3, businesses can self-host. The Business tier targets companies that prefer managed services. Alternatively, Business Source License (BSL) that converts to open source after 4 years.
@@ -1474,13 +1296,13 @@ Behavior:
 
 | Requirement | How Khurklockd Complies |
 |-------------|------------------------|
-| **Data storage in EU** | No personal data stored on servers. Vault files live on the user's device. Lighthouse (IPFS) nodes may be anywhere — but vault data is encrypted client-side (AES-256-GCM). Even if stored on an IPFS node in the EU, the node operator has no access to plaintext. |
+| **Data storage in EU** | No personal data stored on servers. Vault files live on the user's device. All data is encrypted client-side (AES-256-GCM) and never transmitted to any server. |
 | **Right to access** | User has full access to their data — it's a file on their device. They can open, view, and export it at any time. |
-| **Right to deletion** | User deletes their local `.khurklockd` file. For Lighthouse backup: user can unpin CIDs via the Lighthouse dashboard or API. The backup panel includes a "Delete Backup" button that calls Lighthouse unpin. |
+| **Right to deletion** | User deletes their local `.khurklockd` file. Since no data is stored on servers, deletion is immediate and complete. |
 | **Right to portability** | Vault file is portable JSON. Export to CSV/JSON is built-in (Phase 4). |
 | **Data Protection Officer (DPO)** | Not required — Khurklockd (Khurk Services) does not process personal data on its servers. All processing is client-side. |
-| **Data Processing Agreement (DPA)** | Not required — Khurk Services is not a data processor. The user is the data controller. Lighthouse.Storage is a storage provider of encrypted blobs; a DPA can be provided if needed. |
-| **Breach notification** | If a Lighthouse vulnerability is discovered, affected users are notified via email (if Pro) or in-app notification within 72 hours. Since only encrypted data is on Lighthouse, a breach of the IPFS node would not expose plaintext. |
+| **Data Processing Agreement (DPA)** | Not required — Khurk Services is not a data processor. The user is the data controller. All data remains on the user's device. |
+| **Breach notification** | Since no user data is stored on Khurk Services servers, a server-side breach would expose no user plaintext. Users are notified of any service-related security issues via in-app notification and the project's security advisory page. |
 | **Privacy by design** | Core architecture principle. Zero-knowledge. Local-first. Client-side encryption. No telemetry. No analytics (or opt-in only). |
 
 ### 10.2 CCPA (California Consumer Privacy Act)
@@ -1488,7 +1310,7 @@ Behavior:
 | Requirement | How Khurklockd Complies |
 |-------------|------------------------|
 | **Right to know** | Khurklockd collects no personal information. No data is sold. No data is shared. The privacy policy explicitly states this. |
-| **Right to delete** | Same as GDPR — delete local vault file. Unpin Lighthouse CIDs. |
+| **Right to delete** | Same as GDPR — delete local vault file. No server-side data to delete. |
 | **Right to opt-out of sale** | No data is sold. Nothing to opt out of. |
 | **Non-discrimination** | Free tier is fully-featured. No features are withheld for exercising privacy rights. |
 
@@ -1527,14 +1349,12 @@ Behavior:
 |------|-----------|
 | **Argon2id** | Memory-hard password hashing function (RFC 9106). Resistant to GPU and side-channel attacks. |
 | **AES-256-GCM** | Advanced Encryption Standard with 256-bit key in Galois/Counter Mode. Provides authenticated encryption. |
-| **CID** | Content Identifier — a cryptographic hash that uniquely identifies content on IPFS (e.g., `QmXxx...`). |
 | **CSPRNG** | Cryptographically Secure Pseudo-Random Number Generator. In browsers: `crypto.getRandomValues()`. |
 | **Dead Man's Switch** | A mechanism that triggers an action if the user fails to check in within a specified time period. |
 | **File System Access API** | Browser API that allows web apps to read and write files on the user's local filesystem with user permission. |
 | **HMAC-SHA256** | Hash-based Message Authentication Code using SHA-256. Used for integrity verification. |
 | **HIBP** | Have I Been Pwned — a breach notification service by Troy Hunt. Uses k-anonymity for privacy-preserving checks. |
 | **k-anonymity** | Privacy model where a query reveals only the first 5 characters of a SHA-1 hash, so the server cannot determine the original value. |
-| **Lighthouse.Storage** | IPFS-based decentralized storage with per-file encryption and API key access. |
 | **Nonce** | "Number used once" — a random value used as an initialization vector (IV) in encryption to ensure uniqueness. |
 | **OTPAuth URL** | Standard URI format (`otpauth://totp/...`) for encoding TOTP setup parameters, commonly shared as QR codes. |
 | **PBKDF** | Password-Based Key Derivation Function. Argon2id and PBKDF2 are examples. |
@@ -1559,10 +1379,9 @@ Behavior:
 7. **File System Access API:** https://wicg.github.io/file-system-access/
 8. **OWASP Password Storage Cheat Sheet:** https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 9. **Have I Been Pwned API v3:** https://haveibeenpwned.com/API/v3
-10. **Lighthouse.Storage Docs:** https://docs.lighthouse.storage/
-11. **WCAG 2.1:** https://www.w3.org/TR/WCAG21/
-12. **zxcvbn (Dropbox):** https://github.com/dropbox/zxcvbn
-13. **hash-wasm:** https://github.com/Daninet/hash-wasm
-14. **Key URI Format (Google Authenticator):** https://github.com/google/google-authenticator/wiki/Key-Uri-Format
-15. **GDPR:** https://gdpr.eu/
-16. **CCPA:** https://oag.ca.gov/privacy/ccpa
+10. **WCAG 2.1:** https://www.w3.org/TR/WCAG21/
+11. **zxcvbn (Dropbox):** https://github.com/dropbox/zxcvbn
+12. **hash-wasm:** https://github.com/Daninet/hash-wasm
+13. **Key URI Format (Google Authenticator):** https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+14. **GDPR:** https://gdpr.eu/
+15. **CCPA:** https://oag.ca.gov/privacy/ccpa

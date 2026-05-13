@@ -1,7 +1,7 @@
 {
   "name": "Khurklockd — Encrypted Password Vault",
   "short_name": "Khurklockd",
-  "description": "Local-first, zero-knowledge encrypted password manager with TOTP, breach monitoring, and Lighthouse.Storage backup.",
+  "description": "Local-first, zero-knowledge encrypted password manager with TOTP, breach monitoring, CSV/JSON import, and emergency access.",
   "start_url": "/khurklockd/",
   "scope": "/khurklockd/",
   "display": "standalone",

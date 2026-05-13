@@ -95,8 +95,6 @@ const DEFAULT_SETTINGS: VaultSettings = {
     customSymbols: "",
     excludeAmbiguous: false,
   },
-  lastBackupCid: null,
-  lastBackupAt: null,
   emergencyContacts: [],
   deadManSwitch: null,
   masterPasswordHint: "",

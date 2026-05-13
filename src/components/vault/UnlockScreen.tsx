@@ -194,7 +194,7 @@ export function UnlockScreen() {
 
         <p className="text-xs text-text-muted text-center mt-8">
           AES-256-GCM &middot; Argon2id &middot; Local-First &middot;
-          Lighthouse.Storage Backup
+          Emergency Access
         </p>
       </div>
     </div>

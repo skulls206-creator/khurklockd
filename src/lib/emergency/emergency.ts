@@ -241,7 +241,7 @@ export function generateEmergencyAccessPayload(
   //   1. This payload (identifies which vault + account to recover)
   //   2. The vault key material — either the master password (shared
   //      out-of-band) or a Shamir-shared key shard
-  //   3. The encrypted vault file itself (Lighthouse CID or direct transfer)
+  //   3. The encrypted vault file itself (secure channel transfer)
   const payload = {
     vaultName,
     keySalt:
