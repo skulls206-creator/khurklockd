@@ -69,7 +69,7 @@ const GENERIC_MAP: ColumnMap = {
   name: ["name", "title", "application", "service", "Name", "Title", "Application"],
   username: ["username", "user", "email", "login", "Username", "User", "Email", "Login"],
   password: ["password", "pass", "Password", "Pass"],
-  notes: ["notes", "comment", "Notes", "Comment"],
+  notes: ["notes", "note", "comment", "Notes", "Note", "Comment"],
   totp: ["totp", "otp", "Totp", "Otp"],
   grouping: ["group", "category", "folder"],
   type: ["type"],
@@ -118,20 +118,62 @@ function resolve(
 }
 
 /**
+ * Split CSV text into logical rows, respecting quoted fields with embedded newlines.
+ * Returns an array of strings, each representing one complete CSV record.
+ */
+function splitCSVRows(text: string): string[] {
+  const rows: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (ch === '"') {
+      if (inQuotes) {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          current += '""';
+          i++; // skip escaped quote
+        } else {
+          inQuotes = false;
+          current += ch;
+        }
+      } else {
+        inQuotes = true;
+        current += ch;
+      }
+    } else if (ch === '\n') {
+      if (inQuotes) {
+        current += ch; // newline inside quoted field — keep it
+      } else {
+        if (current.trim()) rows.push(current);
+        current = '';
+      }
+    } else if (ch !== '\r') {
+      current += ch;
+    }
+  }
+
+  if (current.trim()) rows.push(current);
+  return rows;
+}
+
+/**
  * Parse CSV text into ParsedEntry[] with auto-detected format.
  */
 export function parseCSV(text: string, forceFormat?: ImportFormat): ParseResult {
-  const lines = text.split(/\r?\n/);
-  if (lines.length < 2) {
+  const logicalRows = splitCSVRows(text);
+  if (logicalRows.length < 2) {
     return { entries: [], format: forceFormat ?? "auto", error: "CSV file is empty or has only a header row" };
   }
 
-  const headers = parseCSVLine(lines[0]);
+  const headers = parseCSVLine(logicalRows[0]);
+  const headerCount = headers.length;
   const rows: Record<string, string>[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const values = parseCSVLine(lines[i]);
+  for (let i = 1; i < logicalRows.length; i++) {
+    if (!logicalRows[i].trim()) continue;
+    const values = parseCSVLine(logicalRows[i]);
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => {
       row[h] = values[idx] ?? "";
@@ -170,7 +212,6 @@ export function parseCSV(text: string, forceFormat?: ImportFormat): ParseResult 
       entry.extra = { grouping };
     }
 
-    // Type detection from source field
     const typeVal = resolve(row, columnMap.type).toLowerCase().trim();
     if (typeVal) {
       if (typeVal === "note" || typeVal === "secure note") {
