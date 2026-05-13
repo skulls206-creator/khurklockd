@@ -16,12 +16,24 @@ export interface ItemListProps {
 
 type SortKey = "name" | "created" | "updated";
 
-const filterTabs: TabItem[] = [
+const typeLabels: Record<string, string> = {
+  all: "Vault",
+  login: "Logins",
+  note: "Notes",
+  card: "Cards",
+  identity: "Identities",
+  "secure-note": "Secure Notes",
+  cryptocurrency: "Wallets",
+};
+
+const filterTabs: (TabItem & { type?: string })[] = [
   { id: "all", label: "All" },
   { id: "login", label: "Logins" },
   { id: "note", label: "Notes" },
   { id: "card", label: "Cards" },
   { id: "identity", label: "Identities" },
+  { id: "secure-note", label: "Secure Notes" },
+  { id: "cryptocurrency", label: "Wallets" },
 ];
 
 const sortOptions: { key: SortKey; label: string }[] = [
@@ -30,22 +42,43 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "updated", label: "Date Modified" },
 ];
 
+const emptyStateMessages: Record<string, { title: string; description: string }> = {
+  all: { title: "No items found", description: "Add your first login, note, or card to get started." },
+  login: { title: "No logins", description: "Add your first login credential to get started." },
+  note: { title: "No notes", description: "Add your first secure note." },
+  card: { title: "No cards", description: "Add your first payment card." },
+  identity: { title: "No identities", description: "Add your first identity profile." },
+  "secure-note": { title: "No secure notes", description: "Add your first secure note." },
+  cryptocurrency: { title: "No wallets", description: "Add your first cryptocurrency wallet." },
+};
+
 export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListProps) {
   const {
     items,
     searchItems,
     toggleFavorite,
-    saveVault,
     selectedTag,
     setSelectedTag,
     showFavoritesOnly,
     setShowFavoritesOnly,
+    getCountByType,
   } = useVault();
 
   const [activeType, setActiveType] = useState<string>(filterType ?? "all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortAscending, setSortAscending] = useState(true);
+
+  // Build tab items with live counts
+  const tabsWithCounts: TabItem[] = useMemo(
+    () =>
+      filterTabs.map((tab) => ({
+        id: tab.id,
+        label: tab.label,
+        count: tab.id === "all" ? items.length : getCountByType(tab.id as ItemType),
+      })),
+    [items.length, getCountByType],
+  );
 
   const filtered = useMemo(() => {
     const effectiveType = activeType !== "all" ? (activeType as ItemType) : undefined;
@@ -77,135 +110,135 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
     });
 
     return result;
-  }, [items, activeType, searchQuery, sortKey, sortAscending, searchItems, selectedTag, showFavoritesOnly]);
+  }, [activeType, searchQuery, selectedTag, showFavoritesOnly, items, sortKey, sortAscending, searchItems]);
 
-  const handleToggleFav = async (id: string) => {
-    toggleFavorite(id);
-    await saveVault();
+  const handleTabChange = (tabId: string) => {
+    setActiveType(tabId);
+    if (tabId !== "all") {
+      setSelectedTag(null);
+    }
   };
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
-      setSortAscending(!sortAscending);
+      setSortAscending((prev) => !prev);
     } else {
       setSortKey(key);
       setSortAscending(true);
     }
   };
 
-  // Build a description of the active filter for empty state
-  const activeFilters: string[] = [];
-  if (searchQuery) activeFilters.push(`"${searchQuery}"`);
-  if (selectedTag) activeFilters.push(`tag: ${selectedTag}`);
-  if (showFavoritesOnly) activeFilters.push("favorites");
+  const searchPlaceholder =
+    searchQuery.trim()
+      ? `Search ${(typeLabels[activeType] ?? "vault").toLowerCase()}...`
+      : `Search ${(typeLabels[activeType] ?? "vault").toLowerCase()}...`;
 
   return (
-    <div className="space-y-4">
-      {/* Active filter indicator */}
-      {(selectedTag || showFavoritesOnly) && (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-text-muted">Filtered by:</span>
-          {showFavoritesOnly && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-muted text-warning text-xs font-medium">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-              </svg>
-              Favorites
-              <button
-                onClick={() => setShowFavoritesOnly(false)}
-                className="ml-0.5 hover:text-text-primary"
-                aria-label="Remove favorites filter"
-              >
-                x
-              </button>
-            </span>
-          )}
-          {selectedTag && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-muted text-accent text-xs font-medium">
-              {selectedTag}
-              <button
-                onClick={() => setSelectedTag(null)}
-                className="ml-0.5 hover:text-text-primary"
-                aria-label="Remove tag filter"
-              >
-                x
-              </button>
-            </span>
-          )}
-        </div>
-      )}
-
-      {!selectedTag && !showFavoritesOnly && (
-        <Tabs
-          tabs={filterTabs}
-          activeTab={activeType}
-          onChange={setActiveType}
-        />
-      )}
-
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full">
+      {/* Search + Sort bar */}
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-border">
         <div className="flex-1">
           <SearchInput
+            ref={searchInputRef}
             onSearch={setSearchQuery}
-            placeholder={
-              showFavoritesOnly
-                ? "Search favorites..."
-                : selectedTag
-                  ? `Search in "${selectedTag}"...`
-                  : `Search ${activeType !== "all" ? activeType + "s" : "vault"}...`
-            }
+            placeholder={searchPlaceholder}
+            aria-label={`Search ${typeLabels[activeType] ?? "vault"}`}
           />
         </div>
 
-        {/* Sort controls */}
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-text-muted mr-1">Sort:</span>
-          {sortOptions.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => toggleSort(opt.key)}
-              className={[
-                "px-2 py-1 rounded-md transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
-                sortKey === opt.key
-                  ? "bg-accent-muted text-accent"
-                  : "text-text-muted hover:text-text-secondary",
-              ].join(" ")}
-            >
-              {opt.label}
-              {sortKey === opt.key && (
-                <span className="ml-0.5">
-                  {sortAscending ? "\u2191" : "\u2193"}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        {searchQuery.trim() === "" && (
+          <div className="flex items-center gap-1" role="group" aria-label="Sort options">
+            {sortOptions.map((opt) => {
+              const isActive = sortKey === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => toggleSort(opt.key)}
+                  aria-label={`Sort by ${opt.label}${isActive ? ` (${sortAscending ? "ascending" : "descending"})` : ""}`}
+                  aria-pressed={isActive}
+                  className={[
+                    "px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-150",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
+                    isActive
+                      ? "bg-accent-muted text-accent"
+                      : "text-text-muted hover:text-text-secondary hover:bg-surface-hover",
+                  ].join(" ")}
+                >
+                  {opt.label}
+                  {isActive && (
+                    <span className="ml-1 inline-block" aria-hidden="true">
+                      {sortAscending ? "\u2191" : "\u2193"}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {(selectedTag || showFavoritesOnly) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTag(null);
+              setShowFavoritesOnly(false);
+            }}
+            className="text-xs text-text-muted hover:text-text-primary transition-colors"
+            aria-label="Clear filters"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          title={searchQuery || activeFilters.length > 0 ? "No matches" : "No items yet"}
-          description={
-            activeFilters.length > 0
-              ? `No items match ${activeFilters.join(", ")}. Try removing some filters.`
-              : searchQuery
-                ? "Try a different search term or clear the filter."
-                : `No ${activeType !== "all" ? activeType + "s" : "items"} in your vault yet.`
-          }
-        />
-      ) : (
-        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
-          {filtered.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onClick={onSelectItem}
-              onToggleFavorite={handleToggleFav}
-            />
-          ))}
-        </div>
-      )}
+      {/* Type filter tabs */}
+      <Tabs tabs={tabsWithCounts} activeTab={activeType} onChange={handleTabChange} />
+
+      {/* Item list */}
+      <div className="flex-1 overflow-y-auto" role="list" aria-label={`${typeLabels[activeType] ?? "Vault"} items`}>
+        {filtered.length === 0 ? (
+          <div className="px-5">
+            {(() => {
+              const msg = emptyStateMessages[activeType] ?? emptyStateMessages.all;
+              return (
+                <EmptyState
+                  title={
+                    searchQuery.trim()
+                      ? `No results for "${searchQuery}"`
+                      : selectedTag
+                        ? `No items tagged "${selectedTag}"`
+                        : msg.title
+                  }
+                  description={
+                    searchQuery.trim()
+                      ? "Try a different search term or clear filters."
+                      : msg.description
+                  }
+                />
+              );
+            })()}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-5">
+            {filtered.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onClick={onSelectItem}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* End of list indicator */}
+        {filtered.length > 0 && (
+          <p className="text-center text-xs text-text-muted pb-5 px-5" role="status">
+            {filtered.length} item{filtered.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

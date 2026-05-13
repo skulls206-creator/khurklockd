@@ -13,7 +13,16 @@ import {
   getRemainingSeconds,
 } from "@/lib/totp";
 import type { ParsedOTPAuthURL } from "@/lib/totp";
-import type { VaultItem, LoginItem, NoteItem, CardItem, IdentityItem, TOTPConfig } from "@/types";
+import type {
+  VaultItem,
+  LoginItem,
+  NoteItem,
+  CardItem,
+  IdentityItem,
+  SecureNoteItem,
+  WalletItem,
+  TOTPConfig,
+} from "@/types";
 
 export interface ItemDetailProps {
   itemId: string;
@@ -30,7 +39,99 @@ function formatDate(iso: string): string {
   });
 }
 
-// ── Field renderer helpers ──────────────────────────────────────
+// ── Masked Field (field-level reveal) ──────────────────────
+
+function MaskedField({
+  label,
+  value,
+  copyable,
+  monospace,
+  maskChar = "\u2022",
+}: {
+  label: string;
+  value: string;
+  copyable?: boolean;
+  monospace?: boolean;
+  maskChar?: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  const { copy, copied } = useClipboard({ clearAfterMs: 30_000 });
+
+  // Auto-hide revealed state after 30s
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = setTimeout(() => setRevealed(false), 30_000);
+    return () => clearTimeout(timer);
+  }, [revealed]);
+
+  const displayValue = revealed ? value : maskChar.repeat(Math.min(value.length, 24));
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+        {label}
+      </p>
+      <div className="flex items-center gap-2">
+        <p
+          className={[
+            "text-sm flex-1 break-all",
+            monospace ? "font-password" : "text-text-primary",
+          ].join(" ")}
+        >
+          {displayValue}
+        </p>
+
+        {/* Reveal toggle */}
+        <button
+          type="button"
+          onClick={() => setRevealed((r) => !r)}
+          aria-label={revealed ? `Hide ${label}` : `Reveal ${label}`}
+          className={[
+            "p-1.5 rounded-md transition-colors duration-150",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
+            revealed
+              ? "text-text-muted hover:text-text-primary"
+              : "text-text-muted hover:text-text-primary",
+          ].join(" ")}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            {revealed ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M15 12a3 3 0 01-6 0m6 0a3 3 0 01-6 0m0 0l6 6M4 4l16 16" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            )}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
+
+        {copyable && value && (
+          <button
+            type="button"
+            onClick={() => copy(value)}
+            aria-label={`Copy ${label}`}
+            className={[
+              "p-1.5 rounded-md transition-colors duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
+              copied
+                ? "text-success bg-success-muted"
+                : "text-text-muted hover:text-text-primary",
+            ].join(" ")}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              {copied ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+              )}
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Basic Field (unmasked) ─────────────────────────────────
 
 function Field({
   label,
@@ -93,7 +194,7 @@ function FieldGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── TOTP Display ────────────────────────────────────────────────
+// ── TOTP Display ────────────────────────────────────────────
 
 function TOTPDisplay({ config }: { config: TOTPConfig }) {
   const [code, setCode] = useState("");
@@ -149,7 +250,6 @@ function TOTPDisplay({ config }: { config: TOTPConfig }) {
           </svg>
         </button>
       </div>
-      {/* Countdown ring */}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
           <div
@@ -165,7 +265,7 @@ function TOTPDisplay({ config }: { config: TOTPConfig }) {
   );
 }
 
-// ── Login Fields ─────────────────────────────────────────────────
+// ── Login Fields ─────────────────────────────────────────────
 
 function LoginFields({ item }: { item: LoginItem }) {
   const config = useMemo<TOTPConfig | null>(() => {
@@ -258,9 +358,13 @@ function IdentityFields({ item }: { item: IdentityItem }) {
         {item.postalCode && <Field label="Postal Code" value={item.postalCode} />}
         {item.country && <Field label="Country" value={item.country} />}
         {item.idNumber && (
-          <Field label="ID Number" value={item.idNumber} copyable />
+          <MaskedField label="ID Number" value={item.idNumber} copyable />
         )}
       </FieldGrid>
+      {item.ssn && <MaskedField label="SSN" value={item.ssn} copyable />}
+      {item.driversLicense && <MaskedField label="Driver's License" value={item.driversLicense} copyable />}
+      {item.passportNumber && <MaskedField label="Passport Number" value={item.passportNumber} copyable />}
+      {item.website && <Field label="Website" value={item.website} copyable monospace />}
       {item.notes && <Field label="Notes" value={item.notes} />}
       {item.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -271,7 +375,94 @@ function IdentityFields({ item }: { item: IdentityItem }) {
   );
 }
 
-// ── ItemDetail ──────────────────────────────────────────────────
+// ── Secure Note Fields ──────────────────────────────────────
+
+function SecureNoteFields({ item }: { item: SecureNoteItem }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-text-primary whitespace-pre-wrap break-words leading-relaxed">
+        {item.content || (
+          <span className="text-text-muted italic">No content</span>
+        )}
+      </p>
+
+      {item.customFields.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+            Custom Fields
+          </p>
+          <div className="space-y-2">
+            {item.customFields.map((field, idx) => (
+              <div key={idx}>
+                {field.protected ? (
+                  <PasswordField
+                    value={field.value}
+                    label={field.name}
+                    autoHideMs={30_000}
+                  />
+                ) : (
+                  <Field label={field.name} value={field.value} copyable />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {item.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {item.tags.map((t) => (
+            <Badge key={t}>{t}</Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Wallet/Cryptocurrency Fields ────────────────────────────
+
+function WalletFields({ item }: { item: WalletItem }) {
+  return (
+    <div className="space-y-4">
+      <FieldGrid>
+        <Field label="Cryptocurrency" value={item.cryptoType} />
+        {item.balance && <Field label="Balance" value={item.balance} />}
+      </FieldGrid>
+
+      <PasswordField
+        value={item.walletAddress}
+        label="Wallet Address"
+        autoHideMs={30_000}
+      />
+
+      <FieldGrid>
+        {item.derivationPath && (
+          <Field label="Derivation Path" value={item.derivationPath} monospace />
+        )}
+        {item.privateKey && (
+          <PasswordField value={item.privateKey} label="Private Key" autoHideMs={15_000} />
+        )}
+      </FieldGrid>
+
+      {item.seedPhraseBackedUp !== undefined && (
+        <Badge variant={item.seedPhraseBackedUp ? "success" : "danger"}>
+          {item.seedPhraseBackedUp ? "Seed phrase backed up" : "Seed phrase not backed up"}
+        </Badge>
+      )}
+
+      {item.notes && <Field label="Notes" value={item.notes} />}
+
+      {item.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {item.tags.map((t) => <Badge key={t}>{t}</Badge>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ItemDetail ──────────────────────────────────────────────
 
 export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
   const { getItem, updateItem, deleteItem, saveVault, toggleFavorite } =
@@ -320,14 +511,14 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
     );
   }
 
-  const typeLabel = {
+  const typeLabel: Record<string, string> = {
     login: "Login",
     note: "Note",
     card: "Card",
     identity: "Identity",
     "secure-note": "Secure Note",
     cryptocurrency: "Wallet",
-  }[item.type];
+  };
 
   return (
     <div className="space-y-6">
@@ -347,7 +538,7 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
             <h1 className="text-xl font-bold text-text-primary">
               {item.name}
             </h1>
-            <Badge variant="default">{typeLabel}</Badge>
+            <Badge variant="default">{typeLabel[item.type] ?? "Item"}</Badge>
             {item.favorite && <Badge variant="warning">Favorite</Badge>}
           </div>
         </div>
@@ -379,6 +570,8 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
       {item.type === "note" && <NoteFields item={item} />}
       {item.type === "card" && <CardFields item={item} />}
       {item.type === "identity" && <IdentityFields item={item} />}
+      {item.type === "secure-note" && <SecureNoteFields item={item} />}
+      {item.type === "cryptocurrency" && <WalletFields item={item} />}
 
       {/* Timestamps */}
       <div className="pt-4 border-t border-border">
