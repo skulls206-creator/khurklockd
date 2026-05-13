@@ -1,5 +1,5 @@
 // sw.js — minimal cache-first service worker for offline PWA
-const CACHE_NAME = 'khurklockd-v1';
+const CACHE_NAME = 'khurklockd-v2';
 const PRECACHE = [
   '/khurklockd/',
   '/khurklockd/generator/',
