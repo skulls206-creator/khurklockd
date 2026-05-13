@@ -142,3 +142,12 @@ body {
   font-family: var(--font-mono), "Courier New", monospace;
   letter-spacing: 0.1em;
 }
+
+/* ── PWA install banner animation ─────────────────────────── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
