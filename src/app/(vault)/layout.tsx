@@ -100,6 +100,11 @@ function VaultShell() {
           firstName: "",
           lastName: "",
         });
+      } else if (creatingType === "cryptocurrency") {
+        Object.assign(emptyItem as unknown as Record<string, string>, {
+          cryptoType: "",
+          walletAddress: "",
+        });
       }
 
       return (

@@ -11,6 +11,7 @@ import type {
   NoteItem,
   CardItem,
   IdentityItem,
+  WalletItem,
   ItemType,
   GeneratorConfig,
 } from "@/types";
@@ -411,6 +412,118 @@ function IdentityEditor({
   );
 }
 
+// ── Cryptocurrency Wallet Editor ──────────────────────────────────
+
+function CryptocurrencyEditor({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial?: WalletItem;
+  onSave: (item: VaultItem) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [cryptoType, setCryptoType] = useState(initial?.cryptoType ?? "");
+  const [walletAddress, setWalletAddress] = useState(initial?.walletAddress ?? "");
+  const [derivationPath, setDerivationPath] = useState(initial?.derivationPath ?? "");
+  const [privateKey, setPrivateKey] = useState(initial?.privateKey ?? "");
+  const [seedPhraseBackedUp, setSeedPhraseBackedUp] = useState(initial?.seedPhraseBackedUp ?? false);
+  const [balance, setBalance] = useState(initial?.balance ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
+  const [favorite, setFavorite] = useState(initial?.favorite ?? false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
+    if (!cryptoType.trim()) {
+      setError("Cryptocurrency type is required");
+      return;
+    }
+    if (!walletAddress.trim()) {
+      setError("Wallet address is required");
+      return;
+    }
+    const now = new Date().toISOString();
+    const item: WalletItem = {
+      id: initial?.id ?? "",
+      type: "cryptocurrency",
+      name: name.trim(),
+      cryptoType: cryptoType.trim(),
+      walletAddress: walletAddress.trim(),
+      derivationPath: derivationPath.trim() || undefined,
+      privateKey: privateKey.trim() || undefined,
+      seedPhraseBackedUp,
+      balance: balance.trim() || undefined,
+      notes: notes.trim() || undefined,
+      favorite,
+      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      createdAt: initial?.createdAt ?? now,
+      updatedAt: now,
+    };
+    onSave(item);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div role="alert" className="p-3 rounded-lg bg-danger-muted border border-danger/20 text-sm text-danger">
+          {error}
+        </div>
+      )}
+      <Input label="Wallet Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. My Bitcoin Wallet" autoFocus />
+      <Input label="Cryptocurrency" value={cryptoType} onChange={(e) => setCryptoType(e.target.value)} placeholder="e.g. Bitcoin, Monero, TRON, Ethereum" />
+      <Input label="Wallet Address" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} placeholder="Public wallet address" />
+      <Input label="Derivation Path (optional)" value={derivationPath} onChange={(e) => setDerivationPath(e.target.value)} placeholder="e.g. m/44'/0'/0'/0/0" />
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-text-primary block mb-1">
+          Private Key (optional)
+        </label>
+        <Input
+          type="password"
+          value={privateKey}
+          onChange={(e) => setPrivateKey(e.target.value)}
+          placeholder="Encrypted private key or seed phrase"
+        />
+      </div>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={seedPhraseBackedUp}
+          onChange={(e) => setSeedPhraseBackedUp(e.target.checked)}
+          className="rounded border-border bg-surface text-accent focus:ring-border-focus"
+        />
+        <span className="text-sm text-text-secondary">Seed phrase backed up</span>
+      </label>
+      <Input label="Balance (optional)" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="e.g. 0.5 BTC or $5,000" />
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-text-primary">Notes</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Additional notes..."
+          rows={2}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-surface text-text-primary placeholder:text-text-muted transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-border-focus focus:border-transparent resize-none"
+        />
+      </div>
+      <Input label="Tags (comma-separated)" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="cold-storage, exchange" />
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={favorite} onChange={(e) => setFavorite(e.target.checked)} className="rounded border-border bg-surface text-accent focus:ring-border-focus" />
+        <span className="text-sm text-text-secondary">Favorite</span>
+      </label>
+      <div className="flex gap-3 pt-2">
+        <Button type="submit" variant="primary" className="flex-1">Save Wallet</Button>
+        <Button type="button" variant="ghost" onClick={onCancel} className="flex-1">Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
 // ── Main Editor Router ─────────────────────────────────────────
 
 export function ItemEditor({ item, onSave, onCancel }: ItemEditorProps) {
@@ -446,6 +559,13 @@ export function ItemEditor({ item, onSave, onCancel }: ItemEditorProps) {
       {editorType === "identity" && (
         <IdentityEditor
           initial={item as IdentityItem | undefined}
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      )}
+      {editorType === "cryptocurrency" && (
+        <CryptocurrencyEditor
+          initial={item as WalletItem | undefined}
           onSave={onSave}
           onCancel={onCancel}
         />

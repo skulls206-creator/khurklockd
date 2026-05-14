@@ -15,8 +15,8 @@ export default function PWARegister() {
   const registerSW = useCallback(async () => {
     if (!("serviceWorker" in navigator)) return;
     try {
-      const reg = await navigator.serviceWorker.register("/khurklockd/sw.js", {
-        scope: "/khurklockd/",
+      const reg = await navigator.serviceWorker.register("/sw.js", {
+        scope: "/",
       });
       console.log("[PWA] Service worker registered:", reg.scope);
     } catch (err) {

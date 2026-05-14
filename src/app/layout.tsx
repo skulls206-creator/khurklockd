@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Khurklockd — Encrypted Digital Vault",
   description:
     "A local-first, encrypted password manager and digital vault. Argon2id + AES-256-GCM encryption, TOTP generator, breach monitoring, CSV/JSON import, and emergency access.",
-  manifest: "/khurklockd/manifest.json",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/khurklockd/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/khurklockd/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/khurklockd/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
   },
 };
