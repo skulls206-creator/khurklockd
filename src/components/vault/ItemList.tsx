@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useVault } from "@/hooks/useVault";
 import type { ItemType, VaultItem } from "@/types";
 
@@ -115,6 +115,11 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortAscending, setSortAscending] = useState(true);
+
+  // Sync activeType when filterType prop changes (sidebar navigation)
+  useEffect(() => {
+    if (filterType) setActiveType(filterType);
+  }, [filterType]);
 
   const tabListRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
