@@ -87,7 +87,7 @@ function MaskedField({
           onClick={() => setRevealed((r) => !r)}
           aria-label={revealed ? `Hide ${label}` : `Reveal ${label}`}
           className={[
-            "p-1.5 rounded-md transition-colors duration-150",
+            "inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
             revealed
               ? "text-text-muted hover:text-text-primary"
@@ -110,7 +110,7 @@ function MaskedField({
             onClick={() => copy(value)}
             aria-label={`Copy ${label}`}
             className={[
-              "p-1.5 rounded-md transition-colors duration-150",
+              "inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               copied
                 ? "text-success bg-success-muted"
@@ -165,7 +165,7 @@ function Field({
             onClick={() => copy(value)}
             aria-label={`Copy ${label}`}
             className={[
-              "p-1.5 rounded-md transition-colors duration-150",
+              "inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               copied
                 ? "text-success bg-success-muted"
@@ -238,7 +238,7 @@ function TOTPDisplay({ config }: { config: TOTPConfig }) {
           onClick={() => copy(code)}
           aria-label="Copy TOTP code"
           className={[
-            "p-1.5 rounded-md transition-colors",
+            "inline-flex items-center justify-center p-1.5 rounded-md transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
             copied
               ? "text-success bg-success-muted"
@@ -527,7 +527,7 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
         <div>
           <button
             onClick={onBack}
-            className="text-text-muted hover:text-text-primary transition-colors mb-2 flex items-center gap-1 text-sm"
+            className="inline-flex items-center gap-1 text-text-muted hover:text-text-primary transition-colors mb-2 text-sm"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -547,7 +547,7 @@ export function ItemDetail({ itemId, onBack }: ItemDetailProps) {
             onClick={handleToggleFav}
             aria-label={item.favorite ? "Remove from favorites" : "Add to favorites"}
             className={[
-              "p-2 rounded-md transition-colors duration-150",
+              "inline-flex items-center justify-center p-2 rounded-md transition-colors duration-150",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               item.favorite ? "text-warning" : "text-text-muted hover:text-warning",
             ].join(" ")}

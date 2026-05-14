@@ -56,7 +56,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
           onClick={action.onClick}
           className={[
             "inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium",
-            "bg-accent text-white hover:bg-accent-hover",
+            "bg-accent text-text-inverse hover:bg-accent-hover",
             "transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-bg-primary focus-visible:ring-accent",
           ].join(" ")}

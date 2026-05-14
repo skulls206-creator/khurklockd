@@ -78,7 +78,7 @@ export function Sidebar() {
     showFavoritesOnly,
     setShowFavoritesOnly,
   } = useVault();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const favCount = useMemo(() => getFavorites().length, [getFavorites, items]);
   const totalCount = useMemo(() => getItemCount(), [getItemCount, items]);
@@ -96,7 +96,6 @@ export function Sidebar() {
   const tags = useMemo(() => getAllTags(), [getAllTags, items]);
 
   const handleNav = (item: NavItem) => {
-    // Clear sidebar filters when navigating to a type view
     setSelectedTag(null);
     setShowFavoritesOnly(false);
 
@@ -106,12 +105,14 @@ export function Sidebar() {
     } else {
       setActiveView(item.id as ViewRoute);
     }
+    setCollapsed(true);
   };
 
   const handleTagClick = (tag: string) => {
     setActiveView("dashboard");
     setSelectedTag(selectedTag === tag ? null : tag);
     setShowFavoritesOnly(false);
+    setCollapsed(true);
   };
 
   return (
@@ -119,7 +120,7 @@ export function Sidebar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 rounded-md bg-surface border border-border text-text-secondary hover:text-text-primary"
+        className="md:hidden fixed top-[max(env(safe-area-inset-top),1rem)] left-[max(env(safe-area-inset-left),1rem)] z-40 inline-flex items-center justify-center rounded-md bg-surface border border-border text-text-secondary hover:text-text-primary"
         aria-label={collapsed ? "Open sidebar" : "Close sidebar"}
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -134,7 +135,7 @@ export function Sidebar() {
       {/* Backdrop */}
       {!collapsed && (
         <div
-          className="lg:hidden fixed inset-0 z-30 bg-black/50"
+          className="md:hidden fixed inset-0 z-30 bg-black/50"
           onClick={() => setCollapsed(true)}
         />
       )}
@@ -142,15 +143,16 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={[
-          "fixed lg:sticky top-0 left-0 z-30 h-screen w-64",
+          "fixed md:sticky top-0 left-0 z-30 h-screen w-64 max-w-full",
           "bg-bg-secondary border-r border-border",
           "flex flex-col",
           "transition-transform duration-200",
-          collapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0",
+          "pl-[env(safe-area-inset-left)]",
+          collapsed ? "-translate-x-full md:translate-x-0" : "translate-x-0",
         ].join(" ")}
       >
         {/* Vault name */}
-        <div className="px-5 py-4 border-b border-border">
+        <div className="px-5 py-4 pt-[max(env(safe-area-inset-top),1rem)] border-b border-border">
           <h1 className="text-sm font-semibold text-text-primary truncate">
             {vaultFilePath ?? "Khurklockd"}
           </h1>
@@ -165,6 +167,7 @@ export function Sidebar() {
               setActiveView("dashboard");
               setSelectedTag(null);
               setShowFavoritesOnly(false);
+              setCollapsed(true);
             }}
             className={[
               "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm",
@@ -271,6 +274,7 @@ export function Sidebar() {
                   setActiveView(id);
                   setSelectedTag(null);
                   setShowFavoritesOnly(false);
+                  setCollapsed(true);
                 }}
                 className={[
                   "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm",
@@ -322,6 +326,7 @@ export function Sidebar() {
                   setActiveView(id);
                   setSelectedTag(null);
                   setShowFavoritesOnly(false);
+                  setCollapsed(true);
                 }}
                 className={[
                   "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm",

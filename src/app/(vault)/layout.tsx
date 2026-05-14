@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { VaultProvider, useVault } from "@/hooks/useVault";
 import { UnlockScreen } from "@/components/vault/UnlockScreen";
 import { Sidebar } from "@/components/vault/Sidebar";
@@ -10,6 +10,7 @@ import { ItemDetail } from "@/components/vault/ItemDetail";
 import { ItemEditor } from "@/components/vault/ItemEditor";
 import { ToastContainer } from "@/components/ui/Toast";
 import { ImportPage } from "@/components/vault/ImportPage";
+import { BottomTabBar } from "@/components/vault/BottomTabBar";
 import SettingsPage from "./settings/page";
 import EmergencyPage from "./emergency/page";
 import GeneratorPage from "./generator/page";
@@ -25,6 +26,7 @@ function VaultShell() {
     addItem,
     saveVault,
     items,
+    lockVault,
   } = useVault();
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -54,13 +56,81 @@ function VaultShell() {
       addItem(item);
       await saveVault();
       setCreatingType(null);
+      setShareDefaults(null);
     },
     [addItem, saveVault],
   );
 
   const handleCancelNew = useCallback(() => {
     setCreatingType(null);
+    setShareDefaults(null);
   }, []);
+
+  const [shareDefaults, setShareDefaults] = useState<{
+    name?: string;
+    url?: string;
+    notes?: string;
+  } | null>(null);
+
+  // Handle PWA shortcut + share_target query params on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (vaultState !== "unlocked") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString() === "") return;
+
+    const action = params.get("action");
+    const isShare = params.get("share-target");
+
+    if (isShare) {
+      const title = params.get("title") ?? "";
+      const text = params.get("text") ?? "";
+      const url = params.get("url") ?? "";
+      setShareDefaults({ name: title || url, url, notes: text });
+      setCreatingType("login");
+      setSelectedItemId(null);
+    } else if (action === "new-login") {
+      setCreatingType("login");
+      setSelectedItemId(null);
+    } else if (action === "search") {
+      setActiveView("dashboard");
+      setSelectedItemId(null);
+      setCreatingType(null);
+      window.setTimeout(() => {
+        const el = document.querySelector<HTMLInputElement>(
+          'input[type="search"], input[role="searchbox"], input[aria-label*="earch" i], input[placeholder*="earch" i]',
+        );
+        if (el) {
+          el.focus();
+          el.select?.();
+        } else {
+          console.warn("[PWA] action=search: no search input found");
+        }
+      }, 120);
+    } else if (action === "lock") {
+      lockVault();
+    } else if (action === "generator") {
+      setActiveView("generator");
+    } else if (action === "totp") {
+      setActiveView("totp");
+    }
+
+    // Strip params
+    const url = new URL(window.location.href);
+    [
+      "action",
+      "share-target",
+      "title",
+      "text",
+      "url",
+      "source",
+    ].forEach((k) => url.searchParams.delete(k));
+    window.history.replaceState(
+      {},
+      "",
+      url.pathname + (url.search ? url.search : "") + url.hash,
+    );
+  }, [vaultState, lockVault, setActiveView]);
 
   // Determine what to render in the main content area
   const renderContent = () => {
@@ -81,9 +151,17 @@ function VaultShell() {
 
       // Fill in type-specific defaults
       if (creatingType === "login") {
-        const li = emptyItem as unknown as { username: string; password: string };
+        const li = emptyItem as unknown as {
+          username: string;
+          password: string;
+          uri?: string;
+          notes?: string;
+        };
         li.username = "";
         li.password = "";
+        if (shareDefaults?.url) li.uri = shareDefaults.url;
+        if (shareDefaults?.notes) li.notes = shareDefaults.notes;
+        if (shareDefaults?.name) emptyItem.name = shareDefaults.name;
       } else if (creatingType === "note") {
         const ni = emptyItem as unknown as { content: string };
         ni.content = "";
@@ -206,7 +284,7 @@ function VaultShell() {
               <div className="mt-8">
                 <button
                   onClick={() => handleCreateItem("cryptocurrency")}
-                  className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/80 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-accent text-text-inverse text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
                   Add Wallet Entry
                 </button>
@@ -234,14 +312,22 @@ function VaultShell() {
     );
   }
 
+  const isInDetailMode = !!(selectedItemId || creatingType);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-bg-primary">
+      <main
+        className={[
+          "flex-1 overflow-y-auto bg-bg-primary",
+          "pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
+          "pb-[calc(env(safe-area-inset-bottom)+56px)] md:pb-[env(safe-area-inset-bottom)]",
+        ].join(" ")}
+      >
         {renderContent()}
       </main>
+      <BottomTabBar hidden={isInDetailMode} />
       <ToastContainer />
-      
     </div>
   );
 }

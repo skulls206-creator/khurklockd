@@ -74,7 +74,7 @@ export function KeyboardShortcutsHelp({
           onClick={onClose}
           className={[
             "px-4 py-2 rounded-md text-sm font-medium",
-            "bg-accent text-white",
+            "bg-accent text-text-inverse",
             "hover:bg-accent-hover transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
           ].join(" ")}

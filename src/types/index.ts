@@ -219,28 +219,19 @@ export interface TOTPConfig {
 }
 
 // ── Breach Monitoring ─────────────────────────────────────────
+// Khurklockd uses the Pwned Passwords k-anonymity API: it scans the
+// passwords stored in the vault, not user emails. Only the first 5
+// hex chars of each SHA-1 digest are transmitted.
 
-export interface BreachResult {
-  /** Email or username checked. */
-  query: string;
-  /** Whether the query was found in breaches. */
-  found: boolean;
-  /** List of breach names where the query was found. */
-  breaches: BreachDetail[];
+export interface PasswordBreachResult {
+  /** First 5 hex chars of the SHA-1 digest that were sent over the wire. */
+  prefix: string;
+  /** Whether the password appears in the HIBP corpus. */
+  pwned: boolean;
+  /** Number of times this exact password has been seen across breaches. */
+  count: number;
   /** ISO-8601 timestamp of the check. */
   checkedAt: ISODateTime;
-}
-
-export interface BreachDetail {
-  name: string;
-  domain: string;
-  breachDate: string;
-  addedDate: string;
-  dataClasses: string[];
-  description: string;
-  isVerified: boolean;
-  isSensitive: boolean;
-  pwnCount: number;
 }
 
 // ── Emergency Access ──────────────────────────────────────────

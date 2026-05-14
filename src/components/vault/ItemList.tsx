@@ -316,7 +316,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
                   aria-label={`Sort by ${opt.label}${isActive ? ` (${sortAscending ? "ascending" : "descending"})` : ""}`}
                   aria-pressed={isActive}
                   className={[
-                    "px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-150",
+                    "inline-flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors duration-150",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
                     isActive
                       ? "bg-accent-muted text-accent"
@@ -340,7 +340,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
           <button
             type="button"
             onClick={clearFilters}
-            className="text-xs text-text-muted hover:text-text-primary transition-colors whitespace-nowrap"
+            className="inline-flex items-center px-2 text-xs text-text-muted hover:text-text-primary transition-colors whitespace-nowrap"
             aria-label="Clear filters"
           >
             Clear filters
@@ -404,7 +404,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
               Favorites
               <button
                 onClick={() => setShowFavoritesOnly(false)}
-                className="ml-0.5 hover:text-text-primary"
+                className="inline-flex items-center justify-center ml-0.5 hover:text-text-primary"
                 aria-label="Remove favorites filter"
               >
                 &times;
@@ -416,7 +416,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
               {selectedTag}
               <button
                 onClick={() => setSelectedTag(null)}
-                className="ml-0.5 hover:text-text-primary"
+                className="inline-flex items-center justify-center ml-0.5 hover:text-text-primary"
                 aria-label="Remove tag filter"
               >
                 &times;
@@ -526,7 +526,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
                   }}
                   aria-label={item.favorite ? "Remove from favorites" : "Add to favorites"}
                   className={[
-                    "flex-shrink-0 p-1 rounded-md transition-colors",
+                    "inline-flex items-center justify-center flex-shrink-0 p-1 rounded-md transition-colors",
                     item.favorite
                       ? "text-warning hover:text-warning/80"
                       : "text-text-muted hover:text-warning opacity-0 group-hover:opacity-100",

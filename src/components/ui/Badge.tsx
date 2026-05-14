@@ -10,11 +10,11 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: "bg-surface-hover text-text-secondary border-border",
-  success: "bg-success-muted text-success border-success/20",
-  warning: "bg-warning-muted text-warning border-warning/20",
-  danger: "bg-danger-muted text-danger border-danger/20",
-  info: "bg-info-muted text-info border-info/20",
+  default: "bg-transparent text-text-secondary border-border",
+  success: "bg-transparent text-success border-success/30",
+  warning: "bg-transparent text-warning border-warning/30",
+  danger: "bg-transparent text-danger border-danger/30",
+  info: "bg-transparent text-info border-info/30",
 };
 
 export function Badge({
@@ -26,7 +26,7 @@ export function Badge({
   return (
     <span
       className={[
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
         variantClasses[variant],
         className,
       ].join(" ")}

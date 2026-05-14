@@ -14,19 +14,19 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-white hover:bg-accent-hover focus-visible:ring-accent",
+    "bg-accent text-text-inverse hover:bg-accent-hover focus-visible:ring-accent",
   secondary:
     "bg-surface text-text-primary border border-border hover:bg-surface-hover focus-visible:ring-border-strong",
   danger:
-    "bg-danger text-white hover:bg-red-600 focus-visible:ring-danger",
+    "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger",
   ghost:
     "bg-transparent text-text-secondary hover:bg-surface-hover hover:text-text-primary focus-visible:ring-border",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-xs gap-1.5",
-  md: "px-4 py-2 text-sm gap-2",
-  lg: "px-6 py-3 text-base gap-2.5",
+  sm: "h-7 px-2.5 text-xs gap-1.5",
+  md: "h-8 px-3 text-sm gap-1.5",
+  lg: "h-10 px-4 text-sm gap-2",
 };
 
 const Spinner = () => (

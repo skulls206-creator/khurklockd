@@ -143,6 +143,9 @@ export function UnlockScreen() {
               placeholder="At least 6 characters"
               disabled={isLoading}
               autoFocus
+              autoComplete="new-password"
+              autoCapitalize="off"
+              spellCheck={false}
             />
             <Input
               label="Confirm Master Password"
@@ -151,6 +154,9 @@ export function UnlockScreen() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter your master password"
               disabled={isLoading}
+              autoComplete="new-password"
+              autoCapitalize="off"
+              spellCheck={false}
             />
             <Input
               label="Password Hint (optional)"
@@ -159,6 +165,8 @@ export function UnlockScreen() {
               onChange={(e) => setPasswordHint(e.target.value)}
               placeholder="A hint to help you remember"
               disabled={isLoading}
+              autoComplete="off"
+              enterKeyHint="go"
             />
             <Button
               type="submit"
@@ -182,6 +190,10 @@ export function UnlockScreen() {
               placeholder="Enter your master password"
               disabled={isLoading}
               autoFocus
+              autoComplete="current-password"
+              autoCapitalize="off"
+              spellCheck={false}
+              enterKeyHint="go"
             />
             <Button
               type="submit"

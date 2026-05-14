@@ -11,7 +11,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-accent text-white font-medium text-sm hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-bg-primary transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-accent text-text-inverse font-medium text-sm hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-bg-primary transition-colors"
       >
         Return to Vault
       </Link>

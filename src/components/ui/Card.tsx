@@ -19,7 +19,7 @@ export function Card({
   return (
     <div
       className={[
-        "rounded-xl border border-border bg-surface shadow-sm",
+        "rounded-lg border border-border bg-surface",
         hover
           ? "transition-all duration-150 hover:border-border-strong hover:bg-surface-hover cursor-pointer"
           : "",

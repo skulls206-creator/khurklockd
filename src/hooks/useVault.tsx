@@ -137,11 +137,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         setItems(allItems);
         setSettings(vmGetSettings());
         setVaultFilePath(getVaultFilePath());
-      } catch {
-        // vault might be locked
+      } catch (err) {
+        console.warn("[useVault] refreshItems: inner read failed", err);
       }
-    } catch {
-      // vault locked
+    } catch (err) {
+      console.warn("[useVault] refreshItems: vault not readable", err);
     }
   }, []);
 
@@ -285,7 +285,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getItem = useCallback((id: string): VaultItem | undefined => {
     try {
       return vmGetItem(id);
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getItem failed", err);
       return undefined;
     }
   }, []);
@@ -293,7 +294,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const searchItems = useCallback((query: string, type?: ItemType, tag?: string, favoritesOnly?: boolean): VaultItem[] => {
     try {
       return vmSearchItems(query, type, tag, favoritesOnly);
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] searchItems failed", err);
       return [];
     }
   }, []);
@@ -301,7 +303,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getItemsByType = useCallback((type: ItemType): VaultItem[] => {
     try {
       return vmGetItemsByType(type);
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getItemsByType failed", err);
       return [];
     }
   }, []);
@@ -309,7 +312,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getFavorites = useCallback((): VaultItem[] => {
     try {
       return vmGetFavorites();
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getFavorites failed", err);
       return [];
     }
   }, []);
@@ -317,7 +321,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getItemCount = useCallback((): number => {
     try {
       return vmGetItemCount();
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getItemCount failed", err);
       return 0;
     }
   }, []);
@@ -325,7 +330,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getAllTags = useCallback((): Array<{ tag: string; count: number }> => {
     try {
       return vmGetAllTags();
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getAllTags failed", err);
       return [];
     }
   }, []);
@@ -333,7 +339,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getItemsByTag = useCallback((tag: string): VaultItem[] => {
     try {
       return vmGetItemsByTag(tag);
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getItemsByTag failed", err);
       return [];
     }
   }, []);
@@ -341,7 +348,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const getCountByType = useCallback((type: ItemType): number => {
     try {
       return vmGetCountByType(type);
-    } catch {
+    } catch (err) {
+      console.warn("[useVault] getCountByType failed", err);
       return 0;
     }
   }, []);

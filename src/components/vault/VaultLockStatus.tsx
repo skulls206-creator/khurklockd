@@ -336,7 +336,7 @@ export function VaultLockStatus({
               onClick={handleResetTimer}
               aria-label="Reset auto-lock timer"
               className={[
-                "p-1.5 rounded-md transition-colors duration-150",
+                "inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150",
                 "text-text-muted hover:text-text-primary hover:bg-surface-hover",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               ].join(" ")}
@@ -363,7 +363,7 @@ export function VaultLockStatus({
               onClick={handleLockClick}
               aria-label="Lock vault now"
               className={[
-                "p-1.5 rounded-md transition-colors duration-150",
+                "inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150",
                 "text-text-muted hover:text-warning hover:bg-warning-muted",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               ].join(" ")}

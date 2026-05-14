@@ -94,9 +94,9 @@ function LoginEditor({
           {error}
         </div>
       )}
-      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Google" autoFocus />
-      <Input label="Website URL" value={uri} onChange={(e) => setUri(e.target.value)} placeholder="https://example.com" type="text" />
-      <Input label="Username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="user@example.com" type="text" />
+      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Google" autoFocus autoComplete="off" enterKeyHint="next" />
+      <Input label="Website URL" value={uri} onChange={(e) => setUri(e.target.value)} placeholder="https://example.com" type="text" inputMode="url" autoCapitalize="off" autoComplete="url" autoCorrect="off" spellCheck={false} enterKeyHint="next" />
+      <Input label="Username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="user@example.com" type="text" autoCapitalize="off" autoComplete="username" autoCorrect="off" spellCheck={false} enterKeyHint="next" />
       <div>
         <label className="text-sm font-medium text-text-primary block mb-1">
           Password
@@ -116,7 +116,7 @@ function LoginEditor({
         </div>
         {password && <PasswordField value={password} autoHideMs={0} showStrength />}
       </div>
-      <Input label="TOTP Secret (optional)" value={totpSecret} onChange={(e) => setTotpSecret(e.target.value)} placeholder="Base32-encoded secret" />
+      <Input label="TOTP Secret (optional)" value={totpSecret} onChange={(e) => setTotpSecret(e.target.value)} placeholder="Base32-encoded secret" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" />
       <div className="space-y-1">
         <label className="text-sm font-medium text-text-primary">Notes</label>
         <textarea
@@ -287,14 +287,14 @@ function CardEditor({
       <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chase Sapphire" autoFocus />
       <Input label="Cardholder Name" value={cardholderName} onChange={(e) => setCardholderName(e.target.value)} placeholder="Name on card" />
       <Input label="Brand (optional)" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Visa, Mastercard, Amex..." />
-      <Input label="Card Number" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="1234 5678 9012 3456" type="text" />
+      <Input label="Card Number" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="1234 5678 9012 3456" type="text" inputMode="numeric" autoComplete="cc-number" autoCorrect="off" spellCheck={false} />
       <div className="grid grid-cols-2 gap-4">
-        <Input label="Expiry Month" value={expiryMonth} onChange={(e) => setExpiryMonth(e.target.value)} placeholder="MM" />
-        <Input label="Expiry Year" value={expiryYear} onChange={(e) => setExpiryYear(e.target.value)} placeholder="YYYY" />
+        <Input label="Expiry Month" value={expiryMonth} onChange={(e) => setExpiryMonth(e.target.value)} placeholder="MM" inputMode="numeric" autoComplete="cc-exp-month" />
+        <Input label="Expiry Year" value={expiryYear} onChange={(e) => setExpiryYear(e.target.value)} placeholder="YYYY" inputMode="numeric" autoComplete="cc-exp-year" />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Input label="CVV" type="password" value={cvv} onChange={(e) => setCvv(e.target.value)} placeholder="***" />
-        <Input label="PIN (optional)" type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="****" />
+        <Input label="CVV" type="password" value={cvv} onChange={(e) => setCvv(e.target.value)} placeholder="***" inputMode="numeric" autoComplete="cc-csc" />
+        <Input label="PIN (optional)" type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="****" inputMode="numeric" autoComplete="off" />
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-text-primary">Notes</label>
@@ -383,8 +383,8 @@ function IdentityEditor({
         <Input label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
       </div>
       <Input label="Middle Name (optional)" value={middleName} onChange={(e) => setMiddleName(e.target.value)} placeholder="Middle name" />
-      <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" />
-      <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
+      <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" inputMode="email" autoCapitalize="off" autoComplete="email" autoCorrect="off" spellCheck={false} />
+      <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" inputMode="tel" autoComplete="tel" />
       <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St" />
       <div className="grid grid-cols-2 gap-4">
         <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />

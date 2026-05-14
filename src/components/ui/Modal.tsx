@@ -93,9 +93,11 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       ref={overlayRef}
       onClick={handleBackdropClick}
       className={[
-        "fixed inset-0 z-50 flex items-center justify-center p-4",
+        "fixed inset-0 z-50 flex items-stretch md:items-center justify-center md:p-4",
         "bg-bg-overlay backdrop-blur-sm",
         "animate-[modalFadeIn_0.2s_ease-out]",
+        "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
+        "pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
       ].join(" ")}
       role="dialog"
       aria-modal="true"
@@ -104,7 +106,8 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       <div
         ref={contentRef}
         className={[
-          "relative w-full max-w-md rounded-xl border border-border",
+          "relative w-full md:max-w-md md:rounded-xl border border-border",
+          "h-full md:h-auto md:max-h-[90vh] overflow-y-auto",
           "bg-bg-elevated shadow-2xl",
           "animate-[modalSlideIn_0.2s_ease-out]",
         ].join(" ")}

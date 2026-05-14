@@ -1,215 +1,157 @@
 // ── Khurklockd Breach Monitoring ───────────────────────────────
-// HaveIBeenPwned API v3 integration for checking whether vault
-// accounts have appeared in known data breaches.
+// Pwned Passwords k-anonymity model: SHA-1 the password, send only
+// the first 5 hex chars of the digest, and check the response locally
+// for the remaining 35 hex chars. The full password never leaves the
+// browser, and the server never sees the full hash.
 //
-// API docs: https://haveibeenpwned.com/API/v3
+// API docs: https://haveibeenpwned.com/API/v3#PwnedPasswords
+//
+// Note: this replaces the previous implementation that called the
+// /breachedaccount/{email} endpoint with the raw user email — that
+// endpoint requires a paid API key and does NOT use k-anonymity,
+// which contradicted the documented privacy model. See
+// docs/upstream-issues/002-hibp-k-anonymity-correctness.md.
 
-import { BreachResult, BreachDetail } from "@/types";
+import type { PasswordBreachResult } from "@/types";
 
-const HIBP_API_BASE = "https://haveibeenpwned.com/api/v3";
-const HIBP_USER_AGENT = "khurklockd-password-manager/1.0";
-const RATE_LIMIT_DELAY_MS = 1600; // ~1.6s between requests to stay under rate limit
+const HIBP_PASSWORDS_API = "https://api.pwnedpasswords.com/range";
+const RATE_LIMIT_DELAY_MS = 250;
 
-// ── SHA-1 Helpers ──────────────────────────────────────────────
+// ── SHA-1 Helper ───────────────────────────────────────────────
 
 /**
  * Compute the SHA-1 hex digest of a string using the Web Crypto API.
- *
- * @param input - String to hash
- * @returns Lowercase hex-encoded SHA-1 digest
+ * Returns uppercase hex to match the HIBP response format directly.
  */
 export async function sha1Hex(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
+  const data = new TextEncoder().encode(input);
   const hashBuffer = await crypto.subtle.digest("SHA-1", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 }
 
-// ── HIBP API Client ────────────────────────────────────────────
+// ── Pwned Passwords Range Lookup ───────────────────────────────
 
 /**
- * Check whether an email address or username has appeared in known
- * data breaches via the HaveIBeenPwned API v3.
+ * Check whether a password has appeared in the Pwned Passwords corpus
+ * using the k-anonymity model. Only the first 5 hex chars of the SHA-1
+ * digest are sent over the wire; the suffix is compared locally.
  *
- * Uses the breachedaccount endpoint directly (not k-anonymity, which
- * is for passwords, not accounts). Respects rate limits with a delay.
- *
- * @param emailOrUsername - Email address or username to check
- * @returns BreachResult with breach details if found
+ * @param password - The plaintext password to check (never leaves the browser)
+ * @returns Pwned flag, occurrence count, and the prefix that was sent
  */
-export async function checkBreach(
-  emailOrUsername: string,
-): Promise<BreachResult> {
-  const query = emailOrUsername.trim().toLowerCase();
-
-  if (!query) {
-    return {
-      query: emailOrUsername,
-      found: false,
-      breaches: [],
-      checkedAt: new Date().toISOString(),
-    };
+export async function checkPasswordBreach(
+  password: string,
+): Promise<PasswordBreachResult> {
+  if (!password) {
+    throw new Error("Password is required");
   }
 
-  const url = `${HIBP_API_BASE}/breachedaccount/${encodeURIComponent(query)}`;
+  const hash = await sha1Hex(password);
+  const prefix = hash.slice(0, 5);
+  const suffix = hash.slice(5);
 
-  // Add ?truncateResponse=false to get full breach details
-  const fullUrl = `${url}?truncateResponse=false`;
+  const response = await fetch(`${HIBP_PASSWORDS_API}/${prefix}`, {
+    method: "GET",
+    headers: {
+      // Add-Padding asks HIBP to return a constant-size payload so a
+      // network observer cannot infer how popular the prefix is.
+      "Add-Padding": "true",
+    },
+  });
 
-  try {
-    const response = await fetch(fullUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": HIBP_USER_AGENT,
-        Accept: "application/json",
-      },
-    });
-
-    // 404 means the account was not found in any breaches
-    if (response.status === 404) {
-      return {
-        query: emailOrUsername,
-        found: false,
-        breaches: [],
-        checkedAt: new Date().toISOString(),
-      };
-    }
-
-    // 429 rate limit — caller should retry
-    if (response.status === 429) {
-      throw new Error(
-        "HIBP rate limit exceeded. Try again later.",
-      );
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        `HIBP API error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const rawBreaches: unknown = await response.json();
-
-    if (!Array.isArray(rawBreaches)) {
-      throw new Error("Unexpected HIBP API response format");
-    }
-
-    const breaches: BreachDetail[] = rawBreaches.map(
-      (raw: Record<string, unknown>) => ({
-        name: String(raw.Name ?? ""),
-        domain: String(raw.Domain ?? ""),
-        breachDate: String(raw.BreachDate ?? ""),
-        addedDate: String(raw.AddedDate ?? ""),
-        dataClasses: Array.isArray(raw.DataClasses)
-          ? raw.DataClasses.map(String)
-          : [],
-        description: String(raw.Description ?? ""),
-        isVerified: Boolean(raw.IsVerified),
-        isSensitive: Boolean(raw.IsSensitive),
-        pwnCount: typeof raw.PwnCount === "number" ? raw.PwnCount : 0,
-      }),
+  if (response.status === 429) {
+    throw new Error("Pwned Passwords rate limit exceeded. Try again shortly.");
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Pwned Passwords API error: ${response.status} ${response.statusText}`,
     );
-
-    return {
-      query: emailOrUsername,
-      found: breaches.length > 0,
-      breaches,
-      checkedAt: new Date().toISOString(),
-    };
-  } catch (error) {
-    // Re-throw HIBP-specific errors; wrap network errors
-    if (error instanceof Error) {
-      if (error.message.startsWith("HIBP")) {
-        throw error;
-      }
-      throw new Error(`HIBP request failed: ${error.message}`);
-    }
-    throw new Error("HIBP request failed: unknown error");
   }
+
+  const body = await response.text();
+  let count = 0;
+  let pwned = false;
+  for (const line of body.split(/\r?\n/)) {
+    if (!line) continue;
+    const idx = line.indexOf(":");
+    if (idx < 0) continue;
+    const lineSuffix = line.slice(0, idx).trim().toUpperCase();
+    if (lineSuffix !== suffix) continue;
+    const parsed = Number.parseInt(line.slice(idx + 1).trim(), 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      count = parsed;
+      pwned = true;
+    }
+    break;
+  }
+
+  return {
+    prefix,
+    pwned,
+    count,
+    checkedAt: new Date().toISOString(),
+  };
 }
 
 // ── Vault Scanner ──────────────────────────────────────────────
 
+export interface ScannedPassword {
+  /** Vault item id whose password was scanned. */
+  itemId: string;
+  /** Human-friendly item name for display. */
+  itemName: string;
+}
+
+export interface ItemBreachResult {
+  itemId: string;
+  itemName: string;
+  pwned: boolean;
+  /** Occurrence count in the HIBP corpus. */
+  count: number;
+  /** Error message if the lookup itself failed. */
+  error?: string;
+}
+
 /**
- * Scan multiple email addresses/accounts against HaveIBeenPwned.
- * Checks sequentially with a rate-limit delay between each request.
- *
- * @param emails - Array of email addresses or usernames to check
- * @returns Map of email → BreachResult
+ * Scan a set of vault item passwords against Pwned Passwords using
+ * k-anonymity. Each scan sends only the first 5 hex chars of the
+ * SHA-1 digest. A short delay is inserted between requests so the
+ * scan stays well under the HIBP rate limit.
  */
-export async function scanVault(
-  emails: string[],
-): Promise<Map<string, BreachResult[]>> {
-  const results = new Map<string, BreachResult[]>();
+export async function scanPasswords(
+  entries: Array<ScannedPassword & { password: string }>,
+): Promise<ItemBreachResult[]> {
+  const out: ItemBreachResult[] = [];
 
-  for (let i = 0; i < emails.length; i++) {
-    const email = emails[i];
-
-    // Apply rate-limit delay before each request (except the first)
-    if (i > 0) {
-      await delay(RATE_LIMIT_DELAY_MS);
-    }
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (i > 0) await delay(RATE_LIMIT_DELAY_MS);
 
     try {
-      const result = await checkBreach(email);
-      // Store grouped by email — each email maps to an array of
-      // BreachResult objects (always a single-element array in
-      // the current impl, but the Map type allows merging later).
-      results.set(email, [result]);
-    } catch (error) {
-      // On failure, record the error but continue scanning
-      results.set(email, [
-        {
-          query: email,
-          found: false,
-          breaches: [],
-          checkedAt: new Date().toISOString(),
-        },
-      ]);
-      console.error(`Breach check failed for "${email}":`, error);
+      const result = await checkPasswordBreach(entry.password);
+      out.push({
+        itemId: entry.itemId,
+        itemName: entry.itemName,
+        pwned: result.pwned,
+        count: result.count,
+      });
+    } catch (err) {
+      out.push({
+        itemId: entry.itemId,
+        itemName: entry.itemName,
+        pwned: false,
+        count: 0,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   }
 
-  return results;
+  return out;
 }
 
-// ── Helpers ────────────────────────────────────────────────────
-
-/**
- * Promise-based delay helper.
- */
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Check if a BreachResult indicates a serious breach.
- * "Serious" means verified + sensitive data classes exposed,
- * or a very high pwn count (> 10 million).
- */
-export function isSeriousBreach(result: BreachResult): boolean {
-  if (!result.found) return false;
-  return result.breaches.some((b) => {
-    const hasSensitiveData = b.isSensitive && b.isVerified;
-    const highPwnCount = b.pwnCount > 10_000_000;
-    return hasSensitiveData || highPwnCount;
-  });
-}
-
-/**
- * Extract unique breach names from a map of results.
- */
-export function getUniqueBreaches(
-  results: Map<string, BreachResult[]>,
-): string[] {
-  const names = new Set<string>();
-  for (const [, breachResults] of results) {
-    for (const result of breachResults) {
-      for (const breach of result.breaches) {
-        names.add(breach.name);
-      }
-    }
-  }
-  return Array.from(names).sort();
 }

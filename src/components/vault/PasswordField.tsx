@@ -75,7 +75,7 @@ export function PasswordField({
           onClick={visible ? handleHide : handleShow}
           aria-label={visible ? "Hide password" : "Show password"}
           className={[
-            "p-2 rounded-md text-text-muted hover:text-text-primary",
+            "inline-flex items-center justify-center p-2 rounded-md text-text-muted hover:text-text-primary",
             "transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
           ].join(" ")}
@@ -97,7 +97,7 @@ export function PasswordField({
           onClick={() => copy(value)}
           aria-label="Copy to clipboard"
           className={[
-            "p-2 rounded-md transition-colors duration-150",
+            "inline-flex items-center justify-center p-2 rounded-md transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
             copied
               ? "text-success bg-success-muted"
