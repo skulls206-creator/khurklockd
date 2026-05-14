@@ -1,16 +1,15 @@
 // sw.js — minimal cache-first service worker for offline PWA
 const CACHE_NAME = 'khurklockd-v2';
 const PRECACHE = [
-  '/khurklockd/',
-  '/khurklockd/generator/',
-  '/khurklockd/totp/',
-  '/khurklockd/breach/',
-  '/khurklockd/backup/',
-  '/khurklockd/emergency/',
-  '/khurklockd/settings/',
-  '/khurklockd/manifest.json',
-  '/khurklockd/icons/icon-192.png',
-  '/khurklockd/icons/icon-512.png',
+  '/',
+  '/generator/',
+  '/totp/',
+  '/breach/',
+  '/emergency/',
+  '/settings/',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
@@ -39,6 +38,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         return response;
       })
-    ).catch(() => caches.match('/khurklockd/'))
+    ).catch(() => caches.match('/'))
   );
 });
