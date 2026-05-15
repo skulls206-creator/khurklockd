@@ -95,7 +95,7 @@ The "Don't redo" field is the whole point of this file. If a future agent revert
 - The `createEmptyItem` function in layout.tsx uses Zod partial schemas with `as VaultItem` at the return site. This is intentional — TypeScript can't narrow a union from a dynamic `type` variable. The Zod parse provides runtime validation (catches structural drift); the `as VaultItem` is only a type-level assertion, not a safety bypass.
 - Argon2id WASM must be available at runtime. No PBKDF2 fallback was kept. If WASM fails, key derivation throws — which is the correct failure mode (no silent degradation to weaker KDF).
 **Follow-ups:** Wire up the `.light` class via theme context (currently only respects `prefers-color-scheme` media query). Add i18n locale support matching the `locale` setting field. Add import/export keyboard shortcuts.
-**Refs:** commit `<pending>`, no plan file (task was self-contained, no `.local/tasks/`).
+**Refs:** commit `839256b`, no plan file (task was self-contained, no `.local/tasks/`).
 
 ---
 
