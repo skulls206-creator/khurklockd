@@ -59,7 +59,7 @@ export const emergencyContactSchema = z.object({
 
 export const vaultSettingsSchema = z.object({
   lockTimeoutMinutes: z.number().int().min(0).max(1440).default(5),
-  argon2Iterations: z.number().int().min(1).max(10_000_000).default(600_000),
+  argon2Iterations: z.number().int().min(1).max(100).default(3),
   argon2MemoryKiB: z.number().int().min(1).max(1_048_576).default(65_536),
   argon2Parallelism: z.number().int().min(1).max(16).default(4),
   generatorDefaults: generatorConfigSchema.default({

@@ -99,6 +99,85 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ── Light palette (system preference + .light class) ────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg-primary: #f8f9fb;
+    --color-bg-secondary: #f0f1f4;
+    --color-bg-tertiary: #e8eaef;
+    --color-bg-elevated: #ffffff;
+    --color-bg-overlay: rgba(248, 249, 251, 0.85);
+
+    --color-surface: #ffffff;
+    --color-surface-hover: #f3f4f6;
+    --color-surface-active: #e5e7eb;
+    --color-border: #e2e4e9;
+    --color-border-strong: #d1d5db;
+    --color-border-focus: #818cf8;
+
+    --color-text-primary: #111318;
+    --color-text-secondary: #6b7280;
+    --color-text-muted: #9ca3af;
+    --color-text-inverse: #ffffff;
+
+    --color-accent: #818cf8;
+    --color-accent-hover: #6366f1;
+    --color-accent-muted: rgba(129, 140, 248, 0.12);
+
+    --color-success: #16a34a;
+    --color-success-muted: rgba(22, 163, 74, 0.12);
+    --color-warning: #ca8a04;
+    --color-warning-muted: rgba(202, 138, 4, 0.12);
+    --color-danger: #dc2626;
+    --color-danger-muted: rgba(220, 38, 38, 0.12);
+    --color-info: #0891b2;
+    --color-info-muted: rgba(8, 145, 178, 0.12);
+
+    --color-cyan: #06b6d4;
+    --color-teal: #14b8a6;
+    --color-violet: #8b5cf6;
+    --color-rose: #f43f5e;
+  }
+}
+
+.light {
+  --color-bg-primary: #f8f9fb;
+  --color-bg-secondary: #f0f1f4;
+  --color-bg-tertiary: #e8eaef;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(248, 249, 251, 0.85);
+
+  --color-surface: #ffffff;
+  --color-surface-hover: #f3f4f6;
+  --color-surface-active: #e5e7eb;
+  --color-border: #e2e4e9;
+  --color-border-strong: #d1d5db;
+  --color-border-focus: #818cf8;
+
+  --color-text-primary: #111318;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  --color-accent: #818cf8;
+  --color-accent-hover: #6366f1;
+  --color-accent-muted: rgba(129, 140, 248, 0.12);
+
+  --color-success: #16a34a;
+  --color-success-muted: rgba(22, 163, 74, 0.12);
+  --color-warning: #ca8a04;
+  --color-warning-muted: rgba(202, 138, 4, 0.12);
+  --color-danger: #dc2626;
+  --color-danger-muted: rgba(220, 38, 38, 0.12);
+  --color-info: #0891b2;
+  --color-info-muted: rgba(8, 145, 178, 0.12);
+
+  --color-cyan: #06b6d4;
+  --color-teal: #14b8a6;
+  --color-violet: #8b5cf6;
+  --color-rose: #f43f5e;
+}
+
 /* ── Global resets ────────────────────────────────────────── */
 body {
   background: var(--color-bg-primary);

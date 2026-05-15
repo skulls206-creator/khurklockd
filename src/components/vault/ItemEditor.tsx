@@ -45,8 +45,6 @@ function LoginEditor({
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = () => {
-    const defaults = (initial as unknown) ? undefined : undefined;
-    // Use default generator config
     const pw = generatePassword();
     setPassword(pw);
   };

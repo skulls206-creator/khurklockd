@@ -16,6 +16,13 @@ import EmergencyPage from "./emergency/page";
 import GeneratorPage from "./generator/page";
 import BreachPage from "./breach/page";
 import TOTPPage from "./totp/page";
+import {
+  loginItemSchema,
+  noteItemSchema,
+  cardItemSchema,
+  identityItemSchema,
+  walletItemSchema,
+} from "@/lib/vault/schema";
 import type { VaultItem, ItemType, ViewRoute } from "@/types";
 
 function VaultShell() {
@@ -32,6 +39,42 @@ function VaultShell() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [creatingType, setCreatingType] = useState<ItemType | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
+  const [shareDefaults, setShareDefaults] = useState<{
+    name?: string;
+    url?: string;
+    notes?: string;
+  } | null>(null);
+
+  function createEmptyItem(type: ItemType, defaults?: { name?: string; url?: string; notes?: string }): VaultItem {
+    const base = { id: "", name: defaults?.name ?? "", favorite: false, tags: [], createdAt: "", updatedAt: "" };
+    switch (type) {
+      case "login":
+        return loginItemSchema
+          .partial({ id: true, name: true, username: true, password: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "login", username: "", password: "", uri: defaults?.url ?? "", notes: defaults?.notes ?? "" }) as VaultItem;
+      case "note":
+        return noteItemSchema
+          .partial({ id: true, name: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "note", content: "" }) as VaultItem;
+      case "card":
+        return cardItemSchema
+          .partial({ id: true, name: true, cardholderName: true, number: true, expiryMonth: true, expiryYear: true, cvv: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "card", cardholderName: "", number: "", expiryMonth: "", expiryYear: "", cvv: "" }) as VaultItem;
+      case "identity":
+        return identityItemSchema
+          .partial({ id: true, name: true, firstName: true, lastName: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "identity", firstName: "", lastName: "" }) as VaultItem;
+      case "cryptocurrency":
+        return walletItemSchema
+          .partial({ id: true, name: true, cryptoType: true, walletAddress: true, seedPhraseBackedUp: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "cryptocurrency", cryptoType: "", walletAddress: "", seedPhraseBackedUp: false }) as VaultItem;
+      default:
+        return noteItemSchema
+          .partial({ id: true, name: true, createdAt: true, updatedAt: true })
+          .parse({ ...base, type: "note", content: "" }) as VaultItem;
+    }
+  }
 
   const handleSelectItem = useCallback((id: string) => {
     setSelectedItemId(id);
@@ -65,12 +108,6 @@ function VaultShell() {
     setCreatingType(null);
     setShareDefaults(null);
   }, []);
-
-  const [shareDefaults, setShareDefaults] = useState<{
-    name?: string;
-    url?: string;
-    notes?: string;
-  } | null>(null);
 
   // Handle PWA shortcut + share_target query params on mount
   useEffect(() => {
@@ -139,51 +176,7 @@ function VaultShell() {
 
     // Creating a new item
     if (creatingType) {
-      const emptyItem: VaultItem = {
-        id: "",
-        type: creatingType,
-        name: "",
-        favorite: false,
-        tags: [],
-        createdAt: "",
-        updatedAt: "",
-      } as unknown as VaultItem;
-
-      // Fill in type-specific defaults
-      if (creatingType === "login") {
-        const li = emptyItem as unknown as {
-          username: string;
-          password: string;
-          uri?: string;
-          notes?: string;
-        };
-        li.username = "";
-        li.password = "";
-        if (shareDefaults?.url) li.uri = shareDefaults.url;
-        if (shareDefaults?.notes) li.notes = shareDefaults.notes;
-        if (shareDefaults?.name) emptyItem.name = shareDefaults.name;
-      } else if (creatingType === "note") {
-        const ni = emptyItem as unknown as { content: string };
-        ni.content = "";
-      } else if (creatingType === "card") {
-        Object.assign(emptyItem as unknown as Record<string, string>, {
-          cardholderName: "",
-          number: "",
-          expiryMonth: "",
-          expiryYear: "",
-          cvv: "",
-        });
-      } else if (creatingType === "identity") {
-        Object.assign(emptyItem as unknown as Record<string, string>, {
-          firstName: "",
-          lastName: "",
-        });
-      } else if (creatingType === "cryptocurrency") {
-        Object.assign(emptyItem as unknown as Record<string, string>, {
-          cryptoType: "",
-          walletAddress: "",
-        });
-      }
+      const emptyItem = createEmptyItem(creatingType, shareDefaults ?? undefined);
 
       return (
         <div className="p-6">

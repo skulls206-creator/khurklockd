@@ -181,6 +181,10 @@ export interface VaultSettings {
   deadManSwitch: DeadManSwitchConfig | null;
   /** Master password hint. */
   masterPasswordHint: string;
+  /** Content-addressed backup identifier (IPFS CID), null if no backup. */
+  lastBackupCid?: string | null;
+  /** ISO-8601 timestamp of last backup, null if never backed up. */
+  lastBackupAt?: string | null;
 }
 
 // ── Password Generator ────────────────────────────────────────

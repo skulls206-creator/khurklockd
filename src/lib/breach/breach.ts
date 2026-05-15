@@ -15,7 +15,7 @@
 import type { PasswordBreachResult } from "@/types";
 
 const HIBP_PASSWORDS_API = "https://api.pwnedpasswords.com/range";
-const RATE_LIMIT_DELAY_MS = 250;
+const RATE_LIMIT_DELAY_MS = 1500;
 
 // ── SHA-1 Helper ───────────────────────────────────────────────
 

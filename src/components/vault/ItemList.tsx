@@ -296,7 +296,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
             aria-label={searchPlaceholder}
             className={[
               "w-full pl-9 pr-3 py-2 rounded-lg text-sm",
-              "bg-surface-elevated text-text-primary placeholder-text-muted",
+              "bg-bg-elevated text-text-primary placeholder-text-muted",
               "border border-border focus:border-accent focus:ring-1 focus:ring-accent",
               "transition-colors duration-150 outline-none",
             ].join(" ")}
@@ -437,7 +437,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
         {isEmpty ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full px-5 py-16 text-center">
-            <div className="mb-4 p-4 rounded-full bg-surface-elevated">
+            <div className="mb-4 p-4 rounded-full bg-bg-elevated">
               <svg
                 className="h-8 w-8 text-text-muted"
                 fill="none"
@@ -476,7 +476,7 @@ export function ItemList({ filterType, onSelectItem, searchInputRef }: ItemListP
                 onClick={() => onSelectItem(item.id)}
                 className={[
                   "group flex items-start gap-3 p-4 rounded-xl text-left w-full",
-                  "bg-surface-elevated border border-border",
+                  "bg-bg-elevated border border-border",
                   "hover:border-accent/40 hover:bg-surface-hover",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
                   "transition-all duration-150",

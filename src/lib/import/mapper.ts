@@ -5,6 +5,28 @@
 
 import type { ParsedEntry } from "./types";
 import type { VaultItem } from "@/types";
+import {
+  loginItemSchema,
+  noteItemSchema,
+  cardItemSchema,
+  identityItemSchema,
+} from "@/lib/vault/schema";
+
+function partialLogin(data: Record<string, unknown>): VaultItem {
+  return loginItemSchema.partial({ id: true }).parse(data) as VaultItem;
+}
+
+function partialNote(data: Record<string, unknown>): VaultItem {
+  return noteItemSchema.partial({ id: true }).parse(data) as VaultItem;
+}
+
+function partialCard(data: Record<string, unknown>): VaultItem {
+  return cardItemSchema.partial({ id: true }).parse(data) as VaultItem;
+}
+
+function partialIdentity(data: Record<string, unknown>): VaultItem {
+  return identityItemSchema.partial({ id: true }).parse(data) as VaultItem;
+}
 
 /** Normalise a parsed entry into a valid VaultItem. */
 export function mapToVaultItem(entry: ParsedEntry): VaultItem {
@@ -21,7 +43,7 @@ export function mapToVaultItem(entry: ParsedEntry): VaultItem {
 
   switch (cat) {
     case "login":
-      return {
+      return partialLogin({
         id: "",
         type: "login",
         ...base,
@@ -33,20 +55,19 @@ export function mapToVaultItem(entry: ParsedEntry): VaultItem {
         tags: entry.extra?.grouping
           ? [normalizeTag(entry.extra.grouping)]
           : [],
-      } as unknown as VaultItem;
+      });
 
     case "note":
-      return {
+      return partialNote({
         id: "",
         type: "note",
         ...base,
         content: entry.notes ?? entry.password ?? "Imported note",
-      } as unknown as VaultItem;
+      });
 
     case "card": {
-      // Try to extract card fields from notes or name
       const content = entry.notes || "";
-      return {
+      return partialCard({
         id: "",
         type: "card",
         ...base,
@@ -57,12 +78,12 @@ export function mapToVaultItem(entry: ParsedEntry): VaultItem {
         expiryYear: extractField(content, "year") || "2030",
         cvv: extractField(content, "cvv") || extractField(content, "code") || "",
         notes: entry.url ? `URL: ${entry.url}` : "",
-      } as unknown as VaultItem;
+      });
     }
 
     case "identity": {
       const content = entry.notes || "";
-      return {
+      return partialIdentity({
         id: "",
         type: "identity",
         ...base,
@@ -71,17 +92,16 @@ export function mapToVaultItem(entry: ParsedEntry): VaultItem {
         email: entry.username || extractField(content, "email") || "",
         phone: extractField(content, "phone") || "",
         address: extractField(content, "address") || "",
-      } as unknown as VaultItem;
+      });
     }
 
     default:
-      // Fallback: store as note
-      return {
+      return partialNote({
         id: "",
         type: "note",
         ...base,
         content: JSON.stringify(entry, null, 2),
-      } as unknown as VaultItem;
+      });
   }
 }
 

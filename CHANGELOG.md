@@ -72,6 +72,33 @@ The "Don't redo" field is the whole point of this file. If a future agent revert
 
 ---
 
+## Task #24 — 2026-05-14 — 8-item cleanup sprint (dead code, CSS, Argon2id, tests, light mode, type safety)
+**Intent:** Address the 8 highest-priority findings from the khurklockd code audit: dead code removal, broken CSS, type/schema drift, unsafe casts, HIBP rate limiting, PBKDF2→Argon2id swap, zero test coverage, and missing light mode.
+**Outcome:** All 8 items shipped. Codebase is 28 tests richer, crypto uses real Argon2id via hash-wasm, 12 `as unknown as VaultItem` casts replaced with Zod-validated partials, dead route file deleted, type drift reconciled, CSS tokens fixed, light palette added.
+**Key changes:**
+- `src/app/(vault)/import/page.tsx` — deleted (dead route, layout rendered component version)
+- `src/components/vault/ItemEditor.tsx:48` — removed `const defaults = (initial as unknown) ? undefined : undefined` dead code
+- `src/components/vault/ItemList.tsx` — `bg-surface-elevated` → `bg-bg-elevated` (3 occurrences, missing token)
+- `src/lib/breach/breach.ts` — `RATE_LIMIT_DELAY_MS` 250 → 1500 (HIBP spec compliance)
+- `src/types/index.ts` — added `lastBackupCid` and `lastBackupAt` to `VaultSettings` to match Zod schema
+- `src/lib/crypto/argon2.ts` — full rewrite from PBKDF2-SHA256 to `hash-wasm` Argon2id. Uses 3 iterations (not 600K), keeps same API. Default configs updated in `vault-manager.ts` and `schema.ts`
+- `src/lib/import/mapper.ts` — replaced 5 `as unknown as VaultItem` casts with Zod `partial().parse()` helpers
+- `src/app/(vault)/layout.tsx` — replaced 6 `as unknown` casts (empty item construction + type-specific field fills) with `createEmptyItem()` using Zod partial schemas
+- `src/lib/crypto/utils.test.ts` — 17 tests for encoding, hex/base64, constant-time comparison, RNG
+- `src/lib/crypto/encryption.test.ts` — 3 tests for AES-256-GCM encrypt/decrypt + wrong-key rejection
+- `src/lib/crypto/integrity.test.ts` — 4 tests for HMAC compute/verify/tamper-detection + wipeKey
+- `src/lib/crypto/argon2.test.ts` — 4 tests for Argon2id key derivation (WASM-based, crypto correctness)
+- `src/app/globals.css` — added `@media (prefers-color-scheme: light)` block + `.light` class overrides with full light palette
+**Decisions / drift:** Argon2id default iterations set to 3 per RFC 9106 OWASP recommendation. Build command changed to `npm run build` (was `next build` — just a script shortcut, no behavior change). No `--max-warnings` was lowered; 12 pre-existing React 19 lint errors remain (setState-in-effect, ref-during-render patterns untouched per surgical-change rule).
+**Don't redo:**
+- `bg-surface-elevated` does not exist in the token set; `bg-bg-elevated` is the correct class. Do not add a new `--color-surface-elevated` token — use existing `--color-bg-elevated`.
+- The `createEmptyItem` function in layout.tsx uses Zod partial schemas with `as VaultItem` at the return site. This is intentional — TypeScript can't narrow a union from a dynamic `type` variable. The Zod parse provides runtime validation (catches structural drift); the `as VaultItem` is only a type-level assertion, not a safety bypass.
+- Argon2id WASM must be available at runtime. No PBKDF2 fallback was kept. If WASM fails, key derivation throws — which is the correct failure mode (no silent degradation to weaker KDF).
+**Follow-ups:** Wire up the `.light` class via theme context (currently only respects `prefers-color-scheme` media query). Add i18n locale support matching the `locale` setting field. Add import/export keyboard shortcuts.
+**Refs:** commit `839256b`, no plan file (task was self-contained, no `.local/tasks/`).
+
+---
+
 ## Reading order for fresh agents
 
 1. This file — newest 5 entries.

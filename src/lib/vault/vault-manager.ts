@@ -80,7 +80,7 @@ let currentVaultFile: Vault | null = null;
 
 const DEFAULT_SETTINGS: VaultSettings = {
   lockTimeoutMinutes: 5,
-  argon2Iterations: 600_000,
+  argon2Iterations: 3,
   argon2MemoryKiB: 65_536,
   argon2Parallelism: 4,
   generatorDefaults: {
