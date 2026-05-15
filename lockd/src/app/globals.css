@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/* ── Khurklockd Design System ───────────────────────────────
+   Dark-first, security-themed tokens for a password manager.
+   Tailwind v4 @theme directive replaces tailwind.config.ts
+   ──────────────────────────────────────────────────────────── */
+
+/* ── Base theme (dark by default, no prefers-color-scheme) ── */
+:root {
+  --color-bg-primary: #0a0c10;
+  --color-bg-secondary: #0e1117;
+  --color-bg-tertiary: #12161d;
+  --color-bg-elevated: #161b24;
+  --color-bg-overlay: rgba(10, 12, 16, 0.85);
+
+  --color-surface: #11151c;
+  --color-surface-hover: #161b24;
+  --color-surface-active: #1c222c;
+  --color-border: #1d2330;
+  --color-border-strong: #2a3140;
+  --color-border-focus: #818cf8;
+
+  --color-text-primary: #e6e9ef;
+  --color-text-secondary: #8a93a4;
+  --color-text-muted: #5a6373;
+  --color-text-inverse: #0a0c10;
+
+  --color-accent: #818cf8;
+  --color-accent-hover: #a5b4fc;
+  --color-accent-muted: rgba(129, 140, 248, 0.12);
+
+  --color-success: #22c55e;
+  --color-success-muted: rgba(34, 197, 94, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-muted: rgba(251, 191, 36, 0.15);
+  --color-danger: #ef4444;
+  --color-danger-muted: rgba(239, 68, 68, 0.15);
+  --color-info: #06b6d4;
+  --color-info-muted: rgba(6, 182, 212, 0.15);
+
+  --color-cyan: #06b6d4;
+  --color-teal: #14b8a6;
+  --color-violet: #8b5cf6;
+  --color-rose: #f43f5e;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* ── Register theme variables with Tailwind ───────────────── */
+@theme inline {
+  --color-background: var(--color-bg-primary);
+  --color-foreground: var(--color-text-primary);
+
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-tertiary: var(--color-bg-tertiary);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-overlay: var(--color-bg-overlay);
+
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-surface-active: var(--color-surface-active);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-border-focus: var(--color-border-focus);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-inverse: var(--color-text-inverse);
+
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-muted: var(--color-accent-muted);
+
+  --color-success: var(--color-success);
+  --color-success-muted: var(--color-success-muted);
+  --color-warning: var(--color-warning);
+  --color-warning-muted: var(--color-warning-muted);
+  --color-danger: var(--color-danger);
+  --color-danger-muted: var(--color-danger-muted);
+  --color-info: var(--color-info);
+  --color-info-muted: var(--color-info-muted);
+
+  --color-cyan: var(--color-cyan);
+  --color-teal: var(--color-teal);
+  --color-violet: var(--color-violet);
+  --color-rose: var(--color-rose);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Light palette (system preference + .light class) ────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg-primary: #f8f9fb;
+    --color-bg-secondary: #f0f1f4;
+    --color-bg-tertiary: #e8eaef;
+    --color-bg-elevated: #ffffff;
+    --color-bg-overlay: rgba(248, 249, 251, 0.85);
+
+    --color-surface: #ffffff;
+    --color-surface-hover: #f3f4f6;
+    --color-surface-active: #e5e7eb;
+    --color-border: #e2e4e9;
+    --color-border-strong: #d1d5db;
+    --color-border-focus: #818cf8;
+
+    --color-text-primary: #111318;
+    --color-text-secondary: #6b7280;
+    --color-text-muted: #9ca3af;
+    --color-text-inverse: #ffffff;
+
+    --color-accent: #818cf8;
+    --color-accent-hover: #6366f1;
+    --color-accent-muted: rgba(129, 140, 248, 0.12);
+
+    --color-success: #16a34a;
+    --color-success-muted: rgba(22, 163, 74, 0.12);
+    --color-warning: #ca8a04;
+    --color-warning-muted: rgba(202, 138, 4, 0.12);
+    --color-danger: #dc2626;
+    --color-danger-muted: rgba(220, 38, 38, 0.12);
+    --color-info: #0891b2;
+    --color-info-muted: rgba(8, 145, 178, 0.12);
+
+    --color-cyan: #06b6d4;
+    --color-teal: #14b8a6;
+    --color-violet: #8b5cf6;
+    --color-rose: #f43f5e;
+  }
+}
+
+.light {
+  --color-bg-primary: #f8f9fb;
+  --color-bg-secondary: #f0f1f4;
+  --color-bg-tertiary: #e8eaef;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(248, 249, 251, 0.85);
+
+  --color-surface: #ffffff;
+  --color-surface-hover: #f3f4f6;
+  --color-surface-active: #e5e7eb;
+  --color-border: #e2e4e9;
+  --color-border-strong: #d1d5db;
+  --color-border-focus: #818cf8;
+
+  --color-text-primary: #111318;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  --color-accent: #818cf8;
+  --color-accent-hover: #6366f1;
+  --color-accent-muted: rgba(129, 140, 248, 0.12);
+
+  --color-success: #16a34a;
+  --color-success-muted: rgba(22, 163, 74, 0.12);
+  --color-warning: #ca8a04;
+  --color-warning-muted: rgba(202, 138, 4, 0.12);
+  --color-danger: #dc2626;
+  --color-danger-muted: rgba(220, 38, 38, 0.12);
+  --color-info: #0891b2;
+  --color-info-muted: rgba(8, 145, 178, 0.12);
+
+  --color-cyan: #06b6d4;
+  --color-teal: #14b8a6;
+  --color-violet: #8b5cf6;
+  --color-rose: #f43f5e;
+}
+
+/* ── Global resets ────────────────────────────────────────── */
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar styling ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ── Selection ────────────────────────────────────────────── */
+::selection {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+/* ── Focus ring ───────────────────────────────────────────── */
+/* Only apply default focus ring to elements that do NOT have their own focus styling */
+*:focus-visible:not([class*="focus-visible:"]):not(button):not(input):not(select):not(textarea):not(a):not([tabindex]) {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Ensure keyboard-only focus indicators remain for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Skip-to-content link (hidden until focused) ──────────── */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  transition: top 0.2s ease;
+}
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Monospace password display ───────────────────────────── */
+.font-password {
+  font-family: var(--font-mono), "Courier New", monospace;
+  letter-spacing: 0.1em;
+}
+
+/* ── PWA install banner animation ─────────────────────────── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
