@@ -308,13 +308,13 @@ function VaultShell() {
   const isInDetailMode = !!(selectedItemId || creatingType);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex min-h-dvh max-h-dvh overflow-hidden">
       <Sidebar />
       <main
         className={[
           "flex-1 overflow-y-auto bg-bg-primary",
-          "pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
-          "pb-[calc(env(safe-area-inset-bottom)+56px)] md:pb-[env(safe-area-inset-bottom)]",
+          "px-[env(safe-area-inset-left)]",
+          "pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-[env(safe-area-inset-bottom)]",
         ].join(" ")}
       >
         {renderContent()}

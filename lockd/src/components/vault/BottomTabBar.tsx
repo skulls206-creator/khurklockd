@@ -81,10 +81,9 @@ export function BottomTabBar({ hidden }: BottomTabBarProps = {}) {
         "md:hidden fixed inset-x-0 bottom-0 z-30",
         "bg-bg-secondary border-t border-border",
         "pb-[env(safe-area-inset-bottom)]",
-        "pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
       ].join(" ")}
     >
-      <ul className="flex items-stretch justify-around">
+      <ul className="flex items-stretch justify-around max-w-full">
         {tabs.map((tab) => {
           const isActive = activeView === tab.id;
           return (

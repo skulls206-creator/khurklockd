@@ -96,7 +96,7 @@ export default function RootLayout({
           media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-dvh flex flex-col">
         <a href="#main-content" className="skip-to-content">
           Skip to content
         </a>
