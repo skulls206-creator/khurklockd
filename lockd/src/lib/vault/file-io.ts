@@ -257,6 +257,72 @@ function validateVaultFile(raw: unknown): Vault {
   }
 }
 
+// ── IndexedDB handle persistence ────────────────────────────────
+// FileSystemFileHandles can be stored in IndexedDB via structured clone.
+// This lets us skip the file picker on subsequent visits.
+
+const HANDLE_DB_NAME = 'khurklockd-handle';
+const HANDLE_STORE = 'handles';
+const HANDLE_KEY = 'vault-handle';
+
+function openHandleDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(HANDLE_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(HANDLE_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function storeHandleInDB(handle: FileSystemFileHandle): Promise<void> {
+  try {
+    const db = await openHandleDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(HANDLE_STORE, 'readwrite');
+      tx.objectStore(HANDLE_STORE).put(handle, HANDLE_KEY);
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    });
+  } catch { /* IndexedDB unavailable — degrade gracefully */ }
+}
+
+async function loadHandleFromDB(): Promise<FileSystemFileHandle | null> {
+  try {
+    const db = await openHandleDB();
+    return await new Promise<FileSystemFileHandle | null>((resolve, reject) => {
+      const tx = db.transaction(HANDLE_STORE, 'readonly');
+      const req = tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
+      req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
+      req.onerror = () => { db.close(); reject(req.error); };
+    });
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredHandle(): void {
+  openHandleDB().then(db => {
+    const tx = db.transaction(HANDLE_STORE, 'readwrite');
+    tx.objectStore(HANDLE_STORE).delete(HANDLE_KEY);
+    tx.oncomplete = () => db.close();
+  }).catch(() => {});
+}
+
+async function verifyHandlePermission(
+  handle: FileSystemFileHandle,
+): Promise<boolean> {
+  try {
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') return true;
+    const req = await handle.requestPermission({ mode: 'readwrite' });
+    return req === 'granted';
+  } catch {
+    return false;
+  }
+}
+
 // ── Public API ───────────────────────────────────────────────────
 
 export interface LoadResult {
@@ -270,6 +336,7 @@ export interface LoadResult {
  *
  * Uses the File System Access API when available (Chrome, Edge, Opera).
  * Falls back to a hidden `<input type="file">` in other browsers.
+ * First tries to reuse a stored file handle from a previous session.
  *
  * @returns The parsed and validated Vault and an optional file handle
  * @throws {VaultFileError} If the file cannot be read or parsed
@@ -277,7 +344,27 @@ export interface LoadResult {
  */
 export async function loadFile(): Promise<LoadResult> {
   if (supportsFileSystemAccess()) {
-    return loadViaFSAA();
+    // Try reusing a stored handle first
+    const stored = await loadHandleFromDB();
+    if (stored) {
+      const hasPerm = await verifyHandlePermission(stored);
+      if (hasPerm) {
+        try {
+          const file = await stored.getFile();
+          const text = await file.text();
+          const raw = JSON.parse(text);
+          const vault = validateVaultFile(raw);
+          return { vault, handle: stored };
+        } catch {
+          // Stored handle is stale — fall through to picker
+          clearStoredHandle();
+        }
+      }
+    }
+    // No stored handle or it failed — show the picker
+    const result = await loadViaFSAA();
+    await storeHandleInDB(result.handle);
+    return result;
   }
   return loadViaInput();
 }
@@ -313,7 +400,9 @@ export async function saveFile(
  */
 export async function createNewFile(): Promise<FileSystemFileHandle | null> {
   if (supportsFileSystemAccess()) {
-    return createViaFSAA();
+    const handle = await createViaFSAA();
+    await storeHandleInDB(handle);
+    return handle;
   }
   return createViaDownload();
 }

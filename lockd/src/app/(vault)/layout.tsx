@@ -16,13 +16,6 @@ import EmergencyPage from "./emergency/page";
 import GeneratorPage from "./generator/page";
 import BreachPage from "./breach/page";
 import TOTPPage from "./totp/page";
-import {
-  loginItemSchema,
-  noteItemSchema,
-  cardItemSchema,
-  identityItemSchema,
-  walletItemSchema,
-} from "@/lib/vault/schema";
 import type { VaultItem, ItemType, ViewRoute } from "@/types";
 
 function VaultShell() {
@@ -47,32 +40,21 @@ function VaultShell() {
   } | null>(null);
 
   function createEmptyItem(type: ItemType, defaults?: { name?: string; url?: string; notes?: string }): VaultItem {
-    const base = { id: "", name: defaults?.name ?? "", favorite: false, tags: [], createdAt: "", updatedAt: "" };
+    const now = new Date().toISOString();
+    const base = { id: crypto.randomUUID(), name: defaults?.name ?? "", favorite: false, tags: [] as string[], createdAt: now, updatedAt: now };
     switch (type) {
       case "login":
-        return loginItemSchema
-          .partial({ id: true, name: true, username: true, password: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "login", username: "", password: "", uri: defaults?.url ?? "", notes: defaults?.notes ?? "" }) as VaultItem;
+        return { ...base, type: "login" as const, username: "", password: "", uri: defaults?.url ?? "", notes: defaults?.notes ?? "" };
       case "note":
-        return noteItemSchema
-          .partial({ id: true, name: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "note", content: "" }) as VaultItem;
+        return { ...base, type: "note" as const, content: "" };
       case "card":
-        return cardItemSchema
-          .partial({ id: true, name: true, cardholderName: true, number: true, expiryMonth: true, expiryYear: true, cvv: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "card", cardholderName: "", number: "", expiryMonth: "", expiryYear: "", cvv: "" }) as VaultItem;
+        return { ...base, type: "card" as const, cardholderName: "", number: "", expiryMonth: "", expiryYear: "", cvv: "" };
       case "identity":
-        return identityItemSchema
-          .partial({ id: true, name: true, firstName: true, lastName: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "identity", firstName: "", lastName: "" }) as VaultItem;
+        return { ...base, type: "identity" as const, firstName: "", lastName: "" };
       case "cryptocurrency":
-        return walletItemSchema
-          .partial({ id: true, name: true, cryptoType: true, walletAddress: true, seedPhraseBackedUp: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "cryptocurrency", cryptoType: "", walletAddress: "", seedPhraseBackedUp: false }) as VaultItem;
+        return { ...base, type: "cryptocurrency" as const, cryptoType: "", walletAddress: "", seedPhraseBackedUp: false };
       default:
-        return noteItemSchema
-          .partial({ id: true, name: true, createdAt: true, updatedAt: true })
-          .parse({ ...base, type: "note", content: "" }) as VaultItem;
+        return { ...base, type: "note" as const, content: "" };
     }
   }
 
