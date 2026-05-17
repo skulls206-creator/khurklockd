@@ -1,8 +1,41 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useVault } from "@/hooks/useVault";
 import type { ViewRoute, ItemType } from "@/types";
+
+// ── Build Info ⚡ ───────────────────────────────────────────────
+// Auto-generated on each build via scripts/generate-build-info.mjs
+// Displays commit short hash at the bottom of the sidebar.
+
+interface BuildData {
+  build: string;
+  commit: string;
+  date: string;
+  builtAt: string;
+}
+
+function BuildInfo() {
+  const [info, setInfo] = useState<BuildData | null>(null);
+
+  useEffect(() => {
+    fetch("/build.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setInfo(d))
+      .catch(() => {});
+  }, []);
+
+  if (!info) return null;
+
+  return (
+    <p
+      className="text-[10px] text-text-muted/40 text-center select-none"
+      title={`commit ${info.commit} · ${info.date}`}
+    >
+      build {info.build}
+    </p>
+  );
+}
 
 interface NavItem {
   id: ViewRoute | "favorites";
@@ -344,8 +377,8 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Lock button */}
-        <div className="p-3 border-t border-border">
+        {/* Lock button + build info */}
+        <div className="p-3 border-t border-border space-y-1">
           <button
             onClick={lockVault}
             className={[
@@ -360,6 +393,7 @@ export function Sidebar() {
             </svg>
             <span>Lock Vault</span>
           </button>
+          <BuildInfo />
         </div>
       </aside>
     </>
