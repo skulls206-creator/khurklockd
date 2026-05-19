@@ -1,6 +1,15 @@
 // ── Khurklockd Emergency Access Module ──────────────────────────
 // Trusted contacts, Dead Man's Switch, and emergency access payloads.
 //
+// STATUS: Partially implemented — basic CRUD for contacts and DMS
+// config works, but the following are placeholders:
+//
+//   - Actual key-sharing mechanism (PGP encryption of payloads)
+//   - Server-side contact notification
+//   - Background timer to trigger DMS across sessions
+//   - VaultMeta / keySalt export from vault-manager for payload gen
+//   - UI for actual emergency recovery flow
+//
 // All mutation functions operate on the in-memory vault via vault-manager.
 // NONE of them call saveVault() — the caller is responsible for persisting
 // changes to disk after one or more mutations.

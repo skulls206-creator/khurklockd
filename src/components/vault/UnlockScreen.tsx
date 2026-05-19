@@ -27,8 +27,8 @@ export function UnlockScreen() {
     e.preventDefault();
     setLocalError(null);
 
-    if (masterPassword.length < 6) {
-      setLocalError("Master password must be at least 6 characters");
+    if (masterPassword.length < 8) {
+      setLocalError("Master password must be at least 8 characters");
       return;
     }
 
@@ -140,7 +140,7 @@ export function UnlockScreen() {
               type="password"
               value={masterPassword}
               onChange={(e) => setMasterPassword(e.target.value)}
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               disabled={isLoading}
               autoFocus
               autoComplete="new-password"

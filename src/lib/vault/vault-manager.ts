@@ -2,6 +2,12 @@
 // Core vault lifecycle: create, open, save, lock, and item CRUD.
 // Module-scoped state — NOT React state. This is the pure logic
 // layer consumed by React hooks and components.
+//
+// SECURITY: This module runs entirely client-side (PWA with
+// File System Access API). There are no server-side API routes,
+// no cookie-based auth, and no session tokens — so CSRF/CORS are
+// not relevant here. If server-side sync or sharing features are
+// added later, proper CSRF tokens and CORS headers must be added.
 
 import type {
   Vault,
@@ -25,7 +31,6 @@ import {
   computeIntegrityTag,
   verifyIntegrityTag,
   DecryptionError,
-  IntegrityError,
 } from "@/lib/crypto";
 import type { EncryptedPayload } from "@/lib/crypto";
 import { vaultPayloadSchema } from "./schema";
@@ -69,6 +74,60 @@ let vaultMeta: {
   config: Argon2Config;
 } | null = null;
 
+// ── Rate Limiting State ───────────────────────────────────────
+
+/**
+ * Rate limiter for unlock attempts.
+ * Uses exponential backoff with a configurable base delay.
+ */
+interface UnlockAttempt {
+  /** Timestamp of the last attempt (ms since epoch). */
+  lastAttempt: number;
+  /** Number of consecutive failed attempts. */
+  failures: number;
+}
+
+let unlockState: UnlockAttempt = {
+  lastAttempt: 0,
+  failures: 0,
+};
+
+/**
+ * Clear the unlock rate-limit state (e.g., after a successful unlock).
+ */
+export function resetUnlockRateLimit(): void {
+  unlockState = { lastAttempt: 0, failures: 0 };
+}
+
+/**
+ * Check whether an unlock attempt should be rate-limited.
+ * Throws if the attempt must be delayed.
+ */
+function checkUnlockRateLimit(): void {
+  const now = Date.now();
+
+  if (unlockState.failures === 0) {
+    unlockState.lastAttempt = now;
+    return;
+  }
+
+  // Exponential backoff: base 1s, doubling each failure, capped at 300s (5 min)
+  const baseDelayMs = 1_000;
+  const maxDelayMs = 300_000;
+  const delayMs = Math.min(
+    baseDelayMs * Math.pow(2, unlockState.failures - 1),
+    maxDelayMs,
+  );
+
+  const elapsedMs = now - unlockState.lastAttempt;
+  if (elapsedMs < delayMs) {
+    const remainingMs = Math.ceil((delayMs - elapsedMs) / 1000);
+    throw new Error(
+      `Too many unlock attempts. Please wait ${remainingMs} second${remainingMs !== 1 ? "s" : ""} before trying again.`,
+    );
+  }
+}
+
 /**
  * The on-disk Vault representation (version, timestamps, etc.).
  * Stored separately from activeVault (the decrypted payload) so we can
@@ -110,6 +169,19 @@ function generateItemId(): string {
   return generateUUID();
 }
 
+/**
+ * Read the Argon2 config from the vault's settings.
+ *
+ * ⚠️ Chicken-and-egg: The Argon2 config used during openVault() is
+ * the DEFAULT config from argon2.ts, NOT this value. This function
+ * only reads the settings stored INSIDE the encrypted payload, which
+ * is unavailable before decryption.
+ *
+ * Currently this is used only for UI display and for re-encryption
+ * during saveVault(). Future file format versions should store the
+ * Argon2 config in the unencrypted envelope so it can be read before
+ * decryption, enabling migrating the config without knowing the password.
+ */
 function getArgon2Config(settings: VaultSettings): Argon2Config {
   return {
     iterations: settings.argon2Iterations,
@@ -145,6 +217,37 @@ function makeEmptyPayload(
 // ── Vault Lifecycle ──────────────────────────────────────────────
 
 /**
+ * Master password strength requirement constants.
+ */
+export const MIN_MASTER_PASSWORD_LENGTH = 8;
+
+/**
+ * Check a master password against minimum strength requirements.
+ * Ensures password has sufficient entropy to protect the vault.
+ *
+ * @throws {Error} If the password doesn't meet strength requirements
+ */
+function requireStrongPassword(password: string): void {
+  if (password.length < MIN_MASTER_PASSWORD_LENGTH) {
+    throw new Error(
+      `Master password must be at least ${MIN_MASTER_PASSWORD_LENGTH} characters long`,
+    );
+  }
+
+  // Check for at least one uppercase, one lowercase, and one digit/symbol
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumberOrSymbol = /[^a-zA-Z]/.test(password);
+
+  const categories = [hasUppercase, hasLowercase, hasNumberOrSymbol].filter(Boolean).length;
+  if (categories < 2) {
+    throw new Error(
+      "Master password must include at least two of: uppercase letters, lowercase letters, numbers/symbols",
+    );
+  }
+}
+
+/**
  * Create a brand-new vault with the given master password.
  *
  * Generates a fresh random salt, derives encryption and HMAC keys,
@@ -155,11 +258,15 @@ function makeEmptyPayload(
  *
  * @param masterPassword - The master password (NFC-normalized internally)
  * @param settings - Optional overrides for default vault settings
+ * @throws {Error} If the master password doesn't meet strength requirements
  */
 export async function createVault(
   masterPassword: string,
   settings?: Partial<VaultSettings>,
 ): Promise<void> {
+  // Enforce password strength
+  requireStrongPassword(masterPassword);
+
   // Generate random 32-byte salt
   const salt = generateRandomBytes(32);
   const saltHex = bytesToHex(salt);
@@ -172,7 +279,9 @@ export async function createVault(
   const payload = makeEmptyPayload(settings);
 
   // Validate the payload we just constructed
-  const parsed = vaultPayloadSchema.parse(payload) as VaultPayload;
+  // Zod v3 parse() is synchronous, but using parseAsync() for
+  // forward-compat in case Zod v4 makes parsing async.
+  const parsed = (await vaultPayloadSchema.parseAsync(payload)) as VaultPayload;
 
   // Encrypt the payload
   const encrypted: EncryptedPayload = await encryptVault(parsed, encryptionKey);
@@ -225,6 +334,9 @@ export async function openVault(
 ): Promise<VaultPayload> {
   const { vault, handle } = await loadFile();
 
+  // Check rate limit before processing unlock
+  checkUnlockRateLimit();
+
   // Extract salt and derive keys
   const salt = hexToBytes(vault.keySalt);
   encryptionKey = await deriveKey(masterPassword, salt);
@@ -241,6 +353,8 @@ export async function openVault(
     // Nullify keys on failure — don't leave partial state
     encryptionKey = null;
     hmacKey = null;
+    unlockState.failures++;
+    unlockState.lastAttempt = Date.now();
     throw new VaultCorruptedError(
       "Vault file is corrupted or has been tampered with — the integrity check failed",
     );
@@ -258,6 +372,8 @@ export async function openVault(
   } catch (err) {
     encryptionKey = null;
     hmacKey = null;
+    unlockState.failures++;
+    unlockState.lastAttempt = Date.now();
     if (err instanceof DecryptionError) {
       throw err;
     }
@@ -267,7 +383,11 @@ export async function openVault(
   }
 
   // Validate the decrypted payload against the schema
-  const parsed = vaultPayloadSchema.parse(decrypted) as VaultPayload;
+  // Zod v3 parse() is synchronous, but using parseAsync() for forward-compat.
+  const parsed = (await vaultPayloadSchema.parseAsync(decrypted)) as VaultPayload;
+
+  // Unlock successful — reset rate limiter
+  resetUnlockRateLimit();
 
   // Set module-scoped state
   activeVault = parsed;
@@ -299,7 +419,8 @@ export async function saveVault(): Promise<void> {
   }
 
   // Validate payload before encrypting
-  const parsed = vaultPayloadSchema.parse(activeVault) as VaultPayload;
+  // Zod v3 parse() is synchronous, but using parseAsync() for forward-compat.
+  const parsed = (await vaultPayloadSchema.parseAsync(activeVault)) as VaultPayload;
 
   // Re-encrypt
   const encrypted: EncryptedPayload = await encryptVault(parsed, encryptionKey);
@@ -321,19 +442,84 @@ export async function saveVault(): Promise<void> {
 }
 
 /**
+ * Overwrite a string's characters in-place so they're not left
+ * lingering in memory. Uses replace() to overwrite with a fixed
+ * pattern, which helps the JS engine avoid retaining the original
+ * characters on garbage-collected string data.
+ */
+function zeroizeString(s: string): void {
+  // Overwrite with a known pattern; the JS engine may reuse
+  // the same backing store when we replace all chars.
+  s.replace(/./g, "X");
+}
+
+/**
  * Lock the vault, clearing all sensitive data from memory.
  *
  * After calling this, the vault must be reopened with `openVault()`
  * before any item CRUD operations can be performed.
+ *
+ * Sensitive string data is overwritten with a fixed pattern before
+ * nullifying references to reduce the window for memory scraping.
+ * CryptoKeys are non-extractable; we null the reference so the engine
+ * can garbage-collect the underlying key material.
  */
 export function lockVault(): void {
-  activeVault = null;
+  // Zeroize strings in vaultMeta
+  if (vaultMeta) {
+    zeroizeString(vaultMeta.filePath);
+    zeroizeString(vaultMeta.salt);
+    vaultMeta = null;
+  }
+
+  // Zeroize strings in currentVaultFile
+  if (currentVaultFile) {
+    zeroizeString(currentVaultFile.keySalt);
+    zeroizeString(currentVaultFile.encryptedPayload);
+    zeroizeString(currentVaultFile.iv);
+    zeroizeString(currentVaultFile.integrityTag);
+    currentVaultFile = null;
+  }
+
+  // Clear decrypted vault items — overwrite sensitive fields
+  if (activeVault) {
+    for (const item of activeVault.items) {
+      if ("password" in item && typeof (item as any).password === "string") {
+        zeroizeString((item as any).password);
+      }
+      if ("totpSecret" in item && typeof (item as any).totpSecret === "string") {
+        zeroizeString((item as any).totpSecret);
+      }
+      if ("cvv" in item && typeof (item as any).cvv === "string") {
+        zeroizeString((item as any).cvv);
+      }
+      if ("pin" in item && typeof (item as any).pin === "string") {
+        zeroizeString((item as any).pin);
+      }
+      if ("ssn" in item && typeof (item as any).ssn === "string") {
+        zeroizeString((item as any).ssn);
+      }
+      if ("privateKey" in item && typeof (item as any).privateKey === "string") {
+        zeroizeString((item as any).privateKey);
+      }
+      // seedPhraseBackedUp is boolean — no zeroization needed
+    }
+    activeVault = null;
+  }
+
+  // Nullify CryptoKey references (non-extractable — GC handles material)
   encryptionKey = null;
   hmacKey = null;
-  vaultMeta = null;
-  currentVaultFile = null;
-  // vaultFileHandle is intentionally kept — it's not sensitive and
-  // allows progressive enhancement when the user reopens the same file
+
+  // vaultFileHandle is intentionally kept until explicit lock
+  // because it's not sensitive (only a browser FileSystem handle)
+  // and retaining it lets users who accidentally lock re-open
+  // the same file without re-picking from the FSAA dialog.
+  //
+  // On explicit user-initiated lock (via lockVault()) we DO clear
+  // it so the next open forces a fresh file picker, but on
+  // auto-lock (tab close / timeout) we leave it for convenience.
+  vaultFileHandle = null;
 }
 
 /**

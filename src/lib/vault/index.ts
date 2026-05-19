@@ -50,6 +50,8 @@ export {
   updateSettings,
   VaultLockedError,
   VaultCorruptedError,
+  resetUnlockRateLimit,
+  MIN_MASTER_PASSWORD_LENGTH,
 } from "./vault-manager";
 
 // ── Lock Timer ──────────────────────────────────────────────────

@@ -120,6 +120,13 @@ export function generateRandomBytes(length: number): Uint8Array {
  * @returns UUID v4 string (e.g., "550e8400-e29b-41d4-a716-446655440000")
  */
 export function generateUUID(): string {
+  // UUIDv4 (128-bit random UUID) — collision probability is
+  // astronomically low (~2^-122 per new UUID) and acceptable for
+  // a local-first password manager with modest item counts.
+  //
+  // TODO: For production with >100k items or shared vaults, add
+  // a uniqueness check against existing item IDs and regenerate
+  // on collision (unlikely but cheap to guard against).
   return crypto.randomUUID();
 }
 
